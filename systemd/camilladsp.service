@@ -1,0 +1,16 @@
+[Unit]
+Description=CamillaDSP audio processor
+After=sound.target
+Wants=sound.target
+
+[Service]
+Type=simple
+User=ros
+Group=audio
+SupplementaryGroups=audio
+ExecStart=/usr/local/bin/camilladsp -l info -o /var/log/camilladsp/camilladsp.log /etc/camilladsp/8in_8out_passthrough.yml
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

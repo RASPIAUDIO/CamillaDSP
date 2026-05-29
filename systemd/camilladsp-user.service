@@ -1,0 +1,12 @@
+[Unit]
+Description=CamillaDSP user service
+After=pipewire.service sound.target
+
+[Service]
+Type=simple
+ExecStart=%h/camilladsp/bin/camilladsp -l info -o %h/camilladsp/logs/camilladsp.log %h/camilladsp/configs/8in_8out_passthrough.yml
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

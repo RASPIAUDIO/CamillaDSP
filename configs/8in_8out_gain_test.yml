@@ -1,0 +1,144 @@
+---
+title: "RASPIAUDIO 8xIN 8xOUT gain test"
+description: "Routage direct 8x8 avec attenuation de securite de -12 dB."
+
+devices:
+  samplerate: 48000
+  chunksize: 1024
+  target_level: 1024
+  adjust_period: 10
+  capture:
+    type: Alsa
+    channels: 8
+    device: "hw:CARD=sndrpihifiberry,DEV=0"
+    format: S32_LE
+  playback:
+    type: Alsa
+    channels: 8
+    device: "hw:CARD=sndrpihifiberry,DEV=0"
+    format: S32_LE
+
+filters:
+  gain_ch1:
+    type: Gain
+    parameters:
+      gain: -12
+  gain_ch2:
+    type: Gain
+    parameters:
+      gain: -12
+  gain_ch3:
+    type: Gain
+    parameters:
+      gain: -12
+  gain_ch4:
+    type: Gain
+    parameters:
+      gain: -12
+  gain_ch5:
+    type: Gain
+    parameters:
+      gain: -12
+  gain_ch6:
+    type: Gain
+    parameters:
+      gain: -12
+  gain_ch7:
+    type: Gain
+    parameters:
+      gain: -12
+  gain_ch8:
+    type: Gain
+    parameters:
+      gain: -12
+
+mixers:
+  passthrough_8x8:
+    channels:
+      in: 8
+      out: 8
+    mapping:
+      - dest: 0
+        sources:
+          - channel: 0
+            gain: 0
+            inverted: false
+      - dest: 1
+        sources:
+          - channel: 1
+            gain: 0
+            inverted: false
+      - dest: 2
+        sources:
+          - channel: 2
+            gain: 0
+            inverted: false
+      - dest: 3
+        sources:
+          - channel: 3
+            gain: 0
+            inverted: false
+      - dest: 4
+        sources:
+          - channel: 4
+            gain: 0
+            inverted: false
+      - dest: 5
+        sources:
+          - channel: 5
+            gain: 0
+            inverted: false
+      - dest: 6
+        sources:
+          - channel: 6
+            gain: 0
+            inverted: false
+      - dest: 7
+        sources:
+          - channel: 7
+            gain: 0
+            inverted: false
+
+pipeline:
+  - type: Mixer
+    name: passthrough_8x8
+  - type: Filter
+    channels:
+      - 0
+    names:
+      - gain_ch1
+  - type: Filter
+    channels:
+      - 1
+    names:
+      - gain_ch2
+  - type: Filter
+    channels:
+      - 2
+    names:
+      - gain_ch3
+  - type: Filter
+    channels:
+      - 3
+    names:
+      - gain_ch4
+  - type: Filter
+    channels:
+      - 4
+    names:
+      - gain_ch5
+  - type: Filter
+    channels:
+      - 5
+    names:
+      - gain_ch6
+  - type: Filter
+    channels:
+      - 6
+    names:
+      - gain_ch7
+  - type: Filter
+    channels:
+      - 7
+    names:
+      - gain_ch8
