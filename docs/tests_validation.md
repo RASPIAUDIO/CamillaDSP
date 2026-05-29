@@ -64,6 +64,42 @@ The service test performed on 2026-05-28 started successfully with:
 /usr/local/bin/camilladsp -l info -o /var/log/camilladsp/camilladsp.log /etc/camilladsp/8in_8out_passthrough.yml
 ```
 
+## Stereo Jack Loopback Test
+
+For a physical jack-to-jack cable between one output jack and one input jack:
+
+```bash
+sudo systemctl stop camilladsp.service
+./scripts/test_loopback_stereo_jack.sh
+```
+
+The documented 2026-05-29 test found:
+
+```text
+output channel 2 -> input channel 2, 500 Hz
+output channel 3 -> input channel 3, 1000 Hz
+```
+
+See `docs/loopback_stereo_jack_test.md`.
+
+## CamillaDSP SignalGenerator Loopback Test
+
+This test uses CamillaDSP as the signal source instead of playing a WAV file:
+
+```bash
+sudo systemctl stop camilladsp.service
+./scripts/install_camilladsp_global_pi5.sh
+./scripts/test_camilladsp_signalgen_loopback.sh
+```
+
+Expected result with the current cable position:
+
+```text
+strongest_inputs 2,3
+```
+
+See `docs/camilladsp_signalgenerator_loopback_test.md`.
+
 ## Long Test
 
 ```bash

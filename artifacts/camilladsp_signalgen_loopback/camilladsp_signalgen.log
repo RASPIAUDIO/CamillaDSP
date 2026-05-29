@@ -1,0 +1,4 @@
+2026-05-29 11:35:57.195233 INFO  [camilladsp] <src/bin.rs:847> CamillaDSP version 4.1.3 (05e9cfc)
+2026-05-29 11:35:57.195247 INFO  [camilladsp] <src/bin.rs:848> Running on linux, aarch64
+2026-05-29 11:35:57.197543 INFO  [camillalib::alsa_backend::device] <src/alsa_backend/device.rs:135> PB: Starting playback from Prepared state
+2026-05-29 11:36:02.193713 INFO  [camilladsp] <src/bin.rs:1065> Shutting down

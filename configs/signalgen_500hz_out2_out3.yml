@@ -1,0 +1,42 @@
+---
+title: "SignalGenerator 500 Hz to output channels 2 and 3"
+description: "CamillaDSP-generated sine routed to the second stereo jack pair."
+
+devices:
+  samplerate: 48000
+  chunksize: 1024
+  target_level: 1024
+  adjust_period: 10
+  capture:
+    type: SignalGenerator
+    channels: 8
+    signal:
+      type: Sine
+      freq: 500
+      level: -18.0
+  playback:
+    type: Alsa
+    channels: 8
+    device: "hw:CARD=sndrpihifiberry,DEV=0"
+    format: S32_LE
+
+mixers:
+  signal_to_out2_out3:
+    channels:
+      in: 8
+      out: 8
+    mapping:
+      - dest: 2
+        sources:
+          - channel: 2
+            gain: 0
+            inverted: false
+      - dest: 3
+        sources:
+          - channel: 3
+            gain: 0
+            inverted: false
+
+pipeline:
+  - type: Mixer
+    name: signal_to_out2_out3

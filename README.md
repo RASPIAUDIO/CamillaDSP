@@ -55,9 +55,15 @@ The default routing is intentionally neutral:
 configs/
   8in_8out_passthrough.yml   Direct 8-input to 8-output routing
   8in_8out_gain_test.yml     Variant with per-channel gain filters
+  signalgen_500hz_out2_out3.yml
+                              CamillaDSP SignalGenerator loopback config
 docs/
   installation_pi5.md        Raspberry Pi 5 installation
   carte_raspiaudio_8x8.md    ALSA inventory for the board
+  camilladsp_signalgenerator_loopback_test.md
+                              Loopback test using CamillaDSP SignalGenerator
+  loopback_stereo_jack_test.md
+                              Stereo jack loopback measurement
   tests_validation.md        Validation procedures
   service_systemd.md         Automatic startup
   troubleshooting.md         Troubleshooting
@@ -68,6 +74,10 @@ scripts/
   inspect_pi_audio.sh        ALSA audio inventory
   test_outputs_8ch.sh        8-output test
   test_inputs_8ch.sh         8-input test
+  test_loopback_stereo_jack.sh
+                              Stereo jack loopback test and analysis
+  test_camilladsp_signalgen_loopback.sh
+                              SignalGenerator loopback test and analysis
 systemd/
   camilladsp.service         System-wide service
   camilladsp-user.service    User systemd service
