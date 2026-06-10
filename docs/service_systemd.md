@@ -14,6 +14,20 @@ It runs CamillaDSP as user `ros` with the `audio` group and uses:
 /usr/local/bin/camilladsp
 /etc/camilladsp/8in_8out_passthrough.yml
 /var/log/camilladsp/camilladsp.log
+/var/lib/camilladsp/statefile.yml
+```
+
+The global installer replaces the `User=` line with the selected Linux user,
+for example:
+
+```bash
+CAMILLA_USER=rosco ./scripts/install_camilladsp_global_pi5.sh
+```
+
+The service also enables the local websocket API required by CamillaGUI:
+
+```text
+-w -p 1234
 ```
 
 Install or refresh it:
@@ -73,3 +87,32 @@ sudo loginctl enable-linger ros
 
 The user service is no longer the preferred deployment, but it remains useful
 when system-wide installation is not allowed.
+
+## CamillaGUI Service
+
+Install the GUI service:
+
+```bash
+./scripts/install_camillagui_pi5.sh
+```
+
+Start, stop, and inspect it:
+
+```bash
+sudo systemctl start camillagui.service
+sudo systemctl status camillagui.service
+sudo journalctl -u camillagui.service -f
+sudo systemctl stop camillagui.service
+```
+
+The web interface listens on:
+
+```text
+http://<raspberry-pi-ip>:5005/gui/index.html
+```
+
+CamillaDSP must also be running for live status and control:
+
+```bash
+sudo systemctl start camilladsp.service
+```
