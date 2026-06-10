@@ -8,7 +8,9 @@ Type=simple
 User=ros
 Group=audio
 SupplementaryGroups=audio
-ExecStart=/usr/local/bin/camilladsp -l info -o /var/log/camilladsp/camilladsp.log /etc/camilladsp/8in_8out_passthrough.yml
+StateDirectory=camilladsp
+LogsDirectory=camilladsp
+ExecStart=/usr/local/bin/camilladsp -l info -o /var/log/camilladsp/camilladsp.log -w -p 1234 -s /var/lib/camilladsp/statefile.yml /etc/camilladsp/8in_8out_passthrough.yml
 Restart=on-failure
 RestartSec=3
 

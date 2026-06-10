@@ -30,6 +30,7 @@ git clone <repository-url> myCamillaDSP
 cd myCamillaDSP
 ./scripts/install_camilladsp_pi5.sh
 ./scripts/install_camilladsp_global_pi5.sh
+./scripts/install_camillagui_pi5.sh
 ./scripts/inspect_pi_audio.sh
 /usr/local/bin/camilladsp --check /etc/camilladsp/8in_8out_passthrough.yml
 ```
@@ -40,6 +41,12 @@ To run CamillaDSP manually for testing with the global installation:
 sudo systemctl start camilladsp.service
 sudo systemctl status camilladsp.service
 sudo systemctl stop camilladsp.service
+```
+
+The optional web GUI is available after installation at:
+
+```text
+http://<raspberry-pi-ip>:5005/gui/index.html
 ```
 
 The default routing is intentionally neutral:
@@ -59,6 +66,7 @@ configs/
                               CamillaDSP SignalGenerator loopback config
 docs/
   installation_pi5.md        Raspberry Pi 5 installation
+  camillagui_installation.md CamillaGUI web interface installation
   carte_raspiaudio_8x8.md    ALSA inventory for the board
   camilladsp_signalgenerator_loopback_test.md
                               Loopback test using CamillaDSP SignalGenerator
@@ -70,7 +78,8 @@ docs/
 scripts/
   install_camilladsp_pi5.sh  User-local installation without sudo
   install_camilladsp_global_pi5.sh
-                              Global installation with passwordless sudo
+                              Global installation with sudo
+  install_camillagui_pi5.sh  CamillaGUI web interface installation
   inspect_pi_audio.sh        ALSA audio inventory
   test_outputs_8ch.sh        8-output test
   test_inputs_8ch.sh         8-input test
@@ -80,6 +89,7 @@ scripts/
                               SignalGenerator loopback test and analysis
 systemd/
   camilladsp.service         System-wide service
+  camillagui.service         CamillaGUI web service
   camilladsp-user.service    User systemd service
 ```
 
@@ -93,6 +103,10 @@ The preferred deployment is now the global installation:
 /etc/systemd/system/camilladsp.service
 /var/log/camilladsp/camilladsp.log
 ```
+
+For CamillaGUI control, the system service enables the CamillaDSP websocket API
+on local port `1234` and stores the active configuration state in
+`/var/lib/camilladsp/statefile.yml`.
 
 The user-local installation remains useful as a staging area and fallback.
 
