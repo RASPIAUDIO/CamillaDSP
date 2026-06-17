@@ -11,14 +11,14 @@ sudo apt update
 sudo apt install -y alsa-utils wget tar
 ```
 
-Passwordless sudo is required for the global installation:
+sudo access is required for the global installation:
 
 ```bash
-sudo -n true
+sudo -v
 ```
 
-If `sudo` is not available non-interactively, use the user-local installation as
-a fallback and check that these tools are present:
+If `sudo` is not available, use the user-local installation as a fallback and
+check that these tools are present:
 
 ```bash
 command -v aplay arecord wget tar
@@ -71,6 +71,13 @@ The global installer creates or updates:
 /var/log/camilladsp/
 ```
 
+The installer adapts the systemd service to the Linux user running the script.
+Override it when needed:
+
+```bash
+CAMILLA_USER=rosco ./scripts/install_camilladsp_global_pi5.sh
+```
+
 Verify the global installation:
 
 ```bash
@@ -94,3 +101,19 @@ sudo install -m 0644 configs/*.yml /etc/camilladsp/
 ```
 
 Stop it with `Ctrl+C`.
+
+## Optional Web GUI
+
+Install CamillaGUI after the global CamillaDSP installation:
+
+```bash
+./scripts/install_camillagui_pi5.sh
+```
+
+Then open:
+
+```text
+http://<raspberry-pi-ip>:5005/gui/index.html
+```
+
+See [CamillaGUI Installation](camillagui_installation.md) for details.

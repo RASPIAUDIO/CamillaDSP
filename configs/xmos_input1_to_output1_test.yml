@@ -1,0 +1,35 @@
+---
+title: "RASPIAUDIO XMOS input 1 to output 1 test"
+description: "Diagnostic: physical input 1 to physical output 1 only, with reduced gain."
+
+devices:
+  samplerate: 48000
+  chunksize: 1024
+  target_level: 1024
+  adjust_period: 10
+  capture:
+    type: Alsa
+    channels: 8
+    device: "hw:CARD=XMOSDevice,DEV=1"
+    format: S32_LE
+  playback:
+    type: Alsa
+    channels: 8
+    device: "hw:CARD=XMOSDevice,DEV=0"
+    format: S32_LE
+
+mixers:
+  input1_to_output1:
+    channels:
+      in: 8
+      out: 8
+    mapping:
+      - dest: 0
+        sources:
+          - channel: 0
+            gain: -20
+            inverted: false
+
+pipeline:
+  - type: Mixer
+    name: input1_to_output1

@@ -1,0 +1,17 @@
+[Unit]
+Description=CamillaDSP web GUI backend
+Documentation=https://github.com/HEnquist/camillagui-backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ros
+Group=audio
+WorkingDirectory=/opt/camillagui-backend
+ExecStart=/opt/camillagui-backend/camillagui_backend
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

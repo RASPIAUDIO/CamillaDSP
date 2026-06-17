@@ -30,6 +30,7 @@ git clone <repository-url> myCamillaDSP
 cd myCamillaDSP
 ./scripts/install_camilladsp_pi5.sh
 ./scripts/install_camilladsp_global_pi5.sh
+./scripts/install_camillagui_pi5.sh
 ./scripts/inspect_pi_audio.sh
 /usr/local/bin/camilladsp --check /etc/camilladsp/8in_8out_passthrough.yml
 ```
@@ -40,6 +41,12 @@ To run CamillaDSP manually for testing with the global installation:
 sudo systemctl start camilladsp.service
 sudo systemctl status camilladsp.service
 sudo systemctl stop camilladsp.service
+```
+
+The optional web GUI is available after installation at:
+
+```text
+http://<raspberry-pi-ip>:5005/gui/index.html
 ```
 
 The default routing is intentionally neutral:
@@ -57,11 +64,16 @@ configs/
   8in_8out_gain_test.yml     Variant with per-channel gain filters
   signalgen_500hz_out2_out3.yml
                               CamillaDSP SignalGenerator loopback config
+  xmos_8x8_physical_passthrough.yml
+                              XMOSDevice 8-input to 8-output routing
 docs/
   installation_pi5.md        Raspberry Pi 5 installation
+  camillagui_installation.md CamillaGUI web interface installation
+  usb_audio_gadget_pi5.md    Pi 5 USB Audio Class 2 gadget setup
   carte_raspiaudio_8x8.md    ALSA inventory for the board
   camilladsp_signalgenerator_loopback_test.md
                               Loopback test using CamillaDSP SignalGenerator
+  xmos_channel_mapping.md     XMOSDevice 8x8 physical channel mapping
   loopback_stereo_jack_test.md
                               Stereo jack loopback measurement
   tests_validation.md        Validation procedures
@@ -70,8 +82,13 @@ docs/
 scripts/
   install_camilladsp_pi5.sh  User-local installation without sudo
   install_camilladsp_global_pi5.sh
-                              Global installation with passwordless sudo
+                              Global installation with sudo
+  install_camillagui_pi5.sh  CamillaGUI web interface installation
   inspect_pi_audio.sh        ALSA audio inventory
+  setup_usb_audio_gadget_pi5.sh
+                              Configure Pi 5 as a 2-channel USB audio gadget
+  diagnose_usb_audio_gadget_pi5.sh
+                              Diagnose gadget attachment, ALSA, and CamillaDSP
   test_outputs_8ch.sh        8-output test
   test_inputs_8ch.sh         8-input test
   test_loopback_stereo_jack.sh
@@ -80,6 +97,7 @@ scripts/
                               SignalGenerator loopback test and analysis
 systemd/
   camilladsp.service         System-wide service
+  camillagui.service         CamillaGUI web service
   camilladsp-user.service    User systemd service
 ```
 
@@ -94,7 +112,21 @@ The preferred deployment is now the global installation:
 /var/log/camilladsp/camilladsp.log
 ```
 
+For CamillaGUI control, the system service enables the CamillaDSP websocket API
+on local port `1234` and stores the active configuration state in
+`/var/lib/camilladsp/statefile.yml`.
+
 The user-local installation remains useful as a staging area and fallback.
 
 PipeWire is active on the Pi, but the CamillaDSP tests use ALSA directly through
 `hw:CARD=sndrpihifiberry,DEV=0` to avoid conversion and software remixing.
+
+Additional XMOS bridge validation on 2026-06-17:
+
+- ALSA card: `XMOSDevice`
+- Capture device: `hw:CARD=XMOSDevice,DEV=1`
+- Playback device: `hw:CARD=XMOSDevice,DEV=0`
+- Capture/playback validated at 48000 Hz, 8 channels, `S32_LE`
+- Measured physical loopback mapping: logical 1:1 on all 8 channels
+- Validated configuration: `configs/xmos_8x8_physical_passthrough.yml`
+- Measurement notes: `docs/xmos_channel_mapping.md`
