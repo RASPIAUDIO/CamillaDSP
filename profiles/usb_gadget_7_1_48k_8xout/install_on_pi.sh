@@ -96,7 +96,9 @@ dwc2
 g_audio
 EOF
 
-cp /etc/modules /etc/modules-load.d/modules.conf
+if [ "$(readlink -f /etc/modules)" != "$(readlink -f /etc/modules-load.d/modules.conf 2>/dev/null || true)" ]; then
+  cp /etc/modules /etc/modules-load.d/modules.conf
+fi
 
 cat >/etc/modprobe.d/usb_g_audio.conf <<EOF
 # RASPIAUDIO USB Audio Gadget 7.1 profile.
