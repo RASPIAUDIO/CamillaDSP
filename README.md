@@ -66,6 +66,8 @@ configs/
                               CamillaDSP SignalGenerator loopback config
   usb_gadget_2ch_48k_to_8xout.yml
                               USB gadget stereo input to RASPIAUDIO 8-output routing
+  usb_gadget_8ch_48k_to_8xout.yml
+                              USB gadget 8-channel input to RASPIAUDIO 8-output routing
   usb_gadget_2ch_48k_to_2ch_output.yml
                               USB gadget stereo input to 2-output routing
   8xin8xout_physical_passthrough.yml
@@ -76,6 +78,8 @@ docs/
   usb_audio_gadget_pi5.md    Pi 5 USB Audio Class 2 gadget setup
   usb_gadget_2ch_to_8xout.md
                               USB stereo input to RASPIAUDIO 8-output tutorial
+  usb_gadget_8ch_to_8xout.md
+                              USB 8-channel input to RASPIAUDIO 8-output tutorial
   carte_raspiaudio_8x8.md    ALSA inventory for the board
   camilladsp_signalgenerator_loopback_test.md
                               Loopback test using CamillaDSP SignalGenerator
@@ -138,3 +142,8 @@ Additional RASPIAUDIO 8-output ALSA validation on 2026-06-17:
 - Measured physical loopback mapping: logical 1:1 on all 8 channels
 - Validated configuration: `configs/8xin8xout_physical_passthrough.yml`
 - Measurement notes: `docs/8xin8xout_channel_mapping.md`
+
+USB Audio Gadget profiles:
+
+- 2-channel host-to-Pi input to 8 outputs: `docs/usb_gadget_2ch_to_8xout.md`
+- 8-channel host-to-Pi input to 8 outputs: `docs/usb_gadget_8ch_to_8xout.md`

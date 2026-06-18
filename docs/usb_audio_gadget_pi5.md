@@ -1,4 +1,4 @@
-# Raspberry Pi 5 USB Audio Gadget, 2 channels
+# Raspberry Pi 5 USB Audio Gadget
 
 This note documents the current RASPIAUDIO Raspberry Pi 5 lab setup where the Pi enumerates as a USB Audio Class 2 sound card to a host computer, then routes host playback through CamillaDSP.
 
@@ -7,11 +7,11 @@ Current validated target:
 - Board: Raspberry Pi 5 Model B
 - OS: Debian Bookworm / Raspberry Pi kernel `6.12.47+rpt-rpi-2712`
 - USB role: device/peripheral on the Pi 5 USB-C port
-- Host-facing USB profile: UAC2 stereo playback endpoint
+- Host-facing USB profile: UAC2 playback endpoint, stereo or 8-channel
 - Gadget-side ALSA device: `hw:CARD=UAC2Gadget,DEV=0` capture
 - DSP: CamillaDSP `4.1.3`
 - DSP output in this lab: RASPIAUDIO 8xOUT / 8xIN+8xOUT via `hw:CARD=XMOSDevice,DEV=0`
-- Audio format: `48000 Hz`, `S32_LE`, `2 channels`
+- Audio format: `48000 Hz`, `S32_LE`, 2 or 8 host-to-Pi channels
 
 Important vocabulary: in Linux USB gadget audio, the host's playback stream appears on the Pi as an ALSA capture device. That is expected.
 
@@ -80,7 +80,7 @@ Do not load unrelated audio modules such as `snd-soc-wm8960` unless that is actu
 
 ## USB audio profile
 
-Create `/etc/modprobe.d/usb_g_audio.conf`:
+For the 2-channel profile, create `/etc/modprobe.d/usb_g_audio.conf`:
 
 ```text
 # Gadget-side ALSA capture = host-side speaker/playback endpoint.
@@ -97,6 +97,18 @@ card N: UAC2Gadget [UAC2_Gadget], device 0: UAC2 PCM [UAC2 PCM]
 ```
 
 For a commercial product, do not ship with `idVendor=0x1d6b`. Use a proper VID/PID.
+
+For an 8-channel host-to-Pi profile, use the 7.1 channel mask `0x63f`:
+
+```text
+options g_audio c_srate=48000 c_ssize=4 c_chmask=0x63f p_chmask=0 iManufacturer=RASPIAUDIO iProduct=RASPIAUDIO_USB_DSP_8ch iSerialNumber=RASPIAUDIO-PI5-8CH idVendor=0x1d6b idProduct=0x0108
+```
+
+See the isolated 8-channel walkthrough in:
+
+```text
+docs/usb_gadget_8ch_to_8xout.md
+```
 
 ## CamillaDSP config
 
@@ -117,6 +129,13 @@ See the isolated walkthrough in:
 
 ```text
 docs/usb_gadget_2ch_to_8xout.md
+```
+
+For the RASPIAUDIO 8xOUT or 8xIN+8xOUT use case where the host sends eight
+discrete channels and CamillaDSP routes them one-to-one to eight outputs, use:
+
+```text
+configs/usb_gadget_8ch_48k_to_8xout.yml
 ```
 
 Install it on the Pi:

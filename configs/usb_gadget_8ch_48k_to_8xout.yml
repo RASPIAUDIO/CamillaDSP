@@ -1,0 +1,70 @@
+---
+title: "RASPIAUDIO USB Audio Gadget 8ch 48k to 8xOUT"
+description: "Host USB-C 7.1/8ch output -> Raspberry Pi UAC2Gadget 8ch capture -> CamillaDSP -> RASPIAUDIO 8xOUT / 8xIN+8xOUT 8ch playback. One-to-one routing."
+
+devices:
+  samplerate: 48000
+  chunksize: 256
+  target_level: 768
+  adjust_period: 10
+  capture:
+    type: Alsa
+    channels: 8
+    device: "hw:CARD=UAC2Gadget,DEV=0"
+    format: S32_LE
+  playback:
+    type: Alsa
+    channels: 8
+    device: "hw:CARD=XMOSDevice,DEV=0"
+    format: S32_LE
+
+mixers:
+  usb_8ch_to_8xout:
+    channels:
+      in: 8
+      out: 8
+    mapping:
+      - dest: 0
+        sources:
+          - channel: 0
+            gain: 0
+            inverted: false
+      - dest: 1
+        sources:
+          - channel: 1
+            gain: 0
+            inverted: false
+      - dest: 2
+        sources:
+          - channel: 2
+            gain: 0
+            inverted: false
+      - dest: 3
+        sources:
+          - channel: 3
+            gain: 0
+            inverted: false
+      - dest: 4
+        sources:
+          - channel: 4
+            gain: 0
+            inverted: false
+      - dest: 5
+        sources:
+          - channel: 5
+            gain: 0
+            inverted: false
+      - dest: 6
+        sources:
+          - channel: 6
+            gain: 0
+            inverted: false
+      - dest: 7
+        sources:
+          - channel: 7
+            gain: 0
+            inverted: false
+
+pipeline:
+  - type: Mixer
+    name: usb_8ch_to_8xout
