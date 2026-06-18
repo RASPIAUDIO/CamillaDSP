@@ -106,6 +106,19 @@ The matching config is in:
 configs/usb_gadget_2ch_48k_to_xmos.yml
 ```
 
+For the RASPIAUDIO 8xOUT use case where the host sends stereo audio and
+CamillaDSP expands it to eight XMOS output channels, use:
+
+```text
+configs/usb_gadget_2ch_48k_to_xmos_8out.yml
+```
+
+See the isolated walkthrough in:
+
+```text
+docs/usb_gadget_2ch_to_8out_xmos.md
+```
+
 Install it on the Pi:
 
 ```bash

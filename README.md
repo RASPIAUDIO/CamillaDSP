@@ -64,12 +64,16 @@ configs/
   8in_8out_gain_test.yml     Variant with per-channel gain filters
   signalgen_500hz_out2_out3.yml
                               CamillaDSP SignalGenerator loopback config
+  usb_gadget_2ch_48k_to_xmos_8out.yml
+                              USB gadget stereo input to XMOS 8-output routing
   xmos_8x8_physical_passthrough.yml
                               XMOSDevice 8-input to 8-output routing
 docs/
   installation_pi5.md        Raspberry Pi 5 installation
   camillagui_installation.md CamillaGUI web interface installation
   usb_audio_gadget_pi5.md    Pi 5 USB Audio Class 2 gadget setup
+  usb_gadget_2ch_to_8out_xmos.md
+                              USB stereo input to 8-output XMOS tutorial
   carte_raspiaudio_8x8.md    ALSA inventory for the board
   camilladsp_signalgenerator_loopback_test.md
                               Loopback test using CamillaDSP SignalGenerator

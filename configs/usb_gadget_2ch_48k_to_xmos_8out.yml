@@ -1,0 +1,70 @@
+---
+title: "RASPIAUDIO USB Audio Gadget 2ch 48k to XMOS 8out"
+description: "Host USB-C stereo output -> Raspberry Pi UAC2Gadget 2ch capture -> CamillaDSP -> XMOSDevice 8ch playback. L/R duplicated to four stereo output pairs."
+
+devices:
+  samplerate: 48000
+  chunksize: 256
+  target_level: 768
+  adjust_period: 10
+  capture:
+    type: Alsa
+    channels: 2
+    device: "hw:CARD=UAC2Gadget,DEV=0"
+    format: S32_LE
+  playback:
+    type: Alsa
+    channels: 8
+    device: "hw:CARD=XMOSDevice,DEV=0"
+    format: S32_LE
+
+mixers:
+  usb_stereo_to_xmos_8out:
+    channels:
+      in: 2
+      out: 8
+    mapping:
+      - dest: 0
+        sources:
+          - channel: 0
+            gain: 0
+            inverted: false
+      - dest: 1
+        sources:
+          - channel: 1
+            gain: 0
+            inverted: false
+      - dest: 2
+        sources:
+          - channel: 0
+            gain: 0
+            inverted: false
+      - dest: 3
+        sources:
+          - channel: 1
+            gain: 0
+            inverted: false
+      - dest: 4
+        sources:
+          - channel: 0
+            gain: 0
+            inverted: false
+      - dest: 5
+        sources:
+          - channel: 1
+            gain: 0
+            inverted: false
+      - dest: 6
+        sources:
+          - channel: 0
+            gain: 0
+            inverted: false
+      - dest: 7
+        sources:
+          - channel: 1
+            gain: 0
+            inverted: false
+
+pipeline:
+  - type: Mixer
+    name: usb_stereo_to_xmos_8out
