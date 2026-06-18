@@ -1,9 +1,9 @@
-# USB 2ch input to 8ch output with CamillaDSP
+# USB 2ch input to RASPIAUDIO 8xOUT with CamillaDSP
 
 This tutorial configures a Raspberry Pi 5 as a USB Audio Class 2 device for a
 host computer. The host sends stereo audio over USB-C to the Pi, CamillaDSP
 receives it as a 2-channel ALSA capture stream, then sends it to the RASPIAUDIO
-8xOUT path through the XMOS 8-channel playback device.
+8xOUT / 8xIN+8xOUT 8-channel playback path.
 
 Validated lab target:
 
@@ -13,9 +13,15 @@ Validated lab target:
 - CamillaGUI on port `5005`
 - USB gadget function: `g_audio`
 - USB audio input on the Pi: `hw:CARD=UAC2Gadget,DEV=0`
-- 8-channel output card: `hw:CARD=XMOSDevice,DEV=0`
+- Output hardware: [RASPIAUDIO 8xOUT](https://raspiaudio.com/product/8xout/) or [RASPIAUDIO 8xIN+8xOUT](https://raspiaudio.com/product/8xin8xout/)
+- 8-channel ALSA playback device: `hw:CARD=XMOSDevice,DEV=0`
 - Audio format: `48000 Hz`, `S32_LE`
-- CamillaDSP profile: `configs/usb_gadget_2ch_48k_to_xmos_8out.yml`
+- CamillaDSP profile: `configs/usb_gadget_2ch_48k_to_8xout.yml`
+
+`XMOSDevice` is the Linux ALSA card name used by the current driver path on the
+lab Raspberry Pi. It is not the product name; the audio board is RASPIAUDIO
+8xOUT, and the same output profile also works with the output side of
+RASPIAUDIO 8xIN+8xOUT.
 
 ## Signal path
 
@@ -26,7 +32,7 @@ Windows / macOS / Linux host
     -> ALSA capture: UAC2Gadget, 2 channels
     -> CamillaDSP
     -> ALSA playback: XMOSDevice, 8 channels
-    -> RASPIAUDIO 8xOUT outputs
+    -> RASPIAUDIO 8xOUT / 8xIN+8xOUT outputs
 ```
 
 Important vocabulary: the host computer sees a USB speaker/output device. On
@@ -37,7 +43,7 @@ That is normal for USB audio gadget mode.
 
 The default profile duplicates the stereo input to four stereo output pairs:
 
-| USB input | Meaning | XMOS logical outputs | Physical outputs |
+| USB input | Meaning | ALSA logical outputs | Physical outputs |
 |---:|---|---|---|
 | 0 | Left | 0, 2, 4, 6 | 1, 3, 5, 7 |
 | 1 | Right | 1, 3, 5, 7 | 2, 4, 6, 8 |
@@ -51,8 +57,8 @@ and per-driver routing.
 Copy or keep these files in the project:
 
 ```text
-configs/usb_gadget_2ch_48k_to_xmos_8out.yml
-docs/usb_gadget_2ch_to_8out_xmos.md
+configs/usb_gadget_2ch_48k_to_8xout.yml
+docs/usb_gadget_2ch_to_8xout.md
 ```
 
 On the Raspberry Pi, the lab setup stores CamillaDSP files under:
@@ -184,7 +190,7 @@ From the repository on the Pi:
 
 ```bash
 cd /home/rosco/myCamillaDSP
-install -m 0644 configs/usb_gadget_2ch_48k_to_xmos_8out.yml \
+install -m 0644 configs/usb_gadget_2ch_48k_to_8xout.yml \
   /home/rosco/myCamillaDSP/configs/
 ```
 
@@ -192,7 +198,7 @@ Validate the YAML:
 
 ```bash
 /usr/local/bin/camilladsp --check \
-  /home/rosco/myCamillaDSP/configs/usb_gadget_2ch_48k_to_xmos_8out.yml
+  /home/rosco/myCamillaDSP/configs/usb_gadget_2ch_48k_to_8xout.yml
 ```
 
 Expected:
@@ -213,7 +219,7 @@ file:
 Copy the 2-in / 8-out profile to `current.yml`:
 
 ```bash
-cp /home/rosco/myCamillaDSP/configs/usb_gadget_2ch_48k_to_xmos_8out.yml \
+cp /home/rosco/myCamillaDSP/configs/usb_gadget_2ch_48k_to_8xout.yml \
   /home/rosco/myCamillaDSP/configs/current.yml
 ```
 
@@ -246,14 +252,14 @@ In the GUI:
    - capture channels: `2`
    - playback: `hw:CARD=XMOSDevice,DEV=0`
    - playback channels: `8`
-4. Open **Mixers** and check `usb_stereo_to_xmos_8out`.
+4. Open **Mixers** and check `usb_stereo_to_8xout`.
 5. Open **Pipeline** and check that the mixer is present.
 6. Press **Apply** to send changes to the running DSP.
 7. Press **Save** to write changes back to `current.yml`.
 
 The mixer should look like this:
 
-![CamillaDSP mixer showing USB stereo input routed to 8 XMOS outputs](assets/usb-gadget-2ch-to-8out-mixer.png)
+![CamillaDSP mixer showing USB stereo input routed to 8 RASPIAUDIO outputs](assets/usb-gadget-2ch-to-8out-mixer.png)
 
 The status panel should show CamillaDSP running, 48 kHz capture, 2 input meters,
 and 8 output meters:
@@ -287,7 +293,7 @@ format: S32_LE
 channels: 2
 rate: 48000
 
-XMOSDevice playback:
+RASPIAUDIO 8-output playback:
 format: S32_LE
 channels: 8
 rate: 48000
@@ -317,7 +323,7 @@ sudo fuser -v /dev/snd/*
 sudo systemctl restart camilladsp.service
 ```
 
-If output is heard on the wrong connector, verify the XMOS physical mapping:
+If output is heard on the wrong connector, verify the RASPIAUDIO 8-output physical mapping:
 
 ```text
 logical out0 -> physical output 1
@@ -330,4 +336,4 @@ logical out6 -> physical output 7
 logical out7 -> physical output 8
 ```
 
-See `docs/xmos_channel_mapping.md` for the measured loopback mapping.
+See `docs/8xin8xout_channel_mapping.md` for the measured loopback mapping.

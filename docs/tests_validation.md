@@ -100,11 +100,12 @@ strongest_inputs 2,3
 
 See `docs/camilladsp_signalgenerator_loopback_test.md`.
 
-## XMOS 8x8 Physical Mapping Test
+## RASPIAUDIO 8-output Physical Mapping Test
 
-For the XMOS bridge profile, patch each physical output to the corresponding
-physical input on the same block, then stop CamillaDSP so ALSA can access the
-capture and playback devices directly:
+For the RASPIAUDIO 8-output ALSA profile (`XMOSDevice` in the current lab),
+patch each physical output to the corresponding physical input on the same
+block, then stop CamillaDSP so ALSA can access the capture and playback devices
+directly:
 
 ```bash
 sudo systemctl stop camilladsp.service
@@ -121,9 +122,9 @@ The 2026-06-17 measurement found a logical 1:1 mapping on all 8 channels, with
 more than 73 dB of margin between the matched input and the next strongest
 input for every tone.
 
-Use `configs/xmos_8x8_physical_passthrough.yml` for CamillaDSP.
+Use `configs/8xin8xout_physical_passthrough.yml` for CamillaDSP.
 
-See `docs/xmos_channel_mapping.md`.
+See `docs/8xin8xout_channel_mapping.md`.
 
 ## Long Test
 

@@ -10,7 +10,7 @@ Current validated target:
 - Host-facing USB profile: UAC2 stereo playback endpoint
 - Gadget-side ALSA device: `hw:CARD=UAC2Gadget,DEV=0` capture
 - DSP: CamillaDSP `4.1.3`
-- DSP output in this lab: `hw:CARD=XMOSDevice,DEV=0`
+- DSP output in this lab: RASPIAUDIO 8xOUT / 8xIN+8xOUT via `hw:CARD=XMOSDevice,DEV=0`
 - Audio format: `48000 Hz`, `S32_LE`, `2 channels`
 
 Important vocabulary: in Linux USB gadget audio, the host's playback stream appears on the Pi as an ALSA capture device. That is expected.
@@ -54,7 +54,7 @@ If present, disable host-only OTG mode:
 #otg_mode=1
 ```
 
-For the current lab output path, the XMOS I2S overlay is also active:
+For the current lab output path, the RASPIAUDIO 8-output driver overlay is also active:
 
 ```ini
 dtoverlay=xmos-device
@@ -103,26 +103,26 @@ For a commercial product, do not ship with `idVendor=0x1d6b`. Use a proper VID/P
 The matching config is in:
 
 ```text
-configs/usb_gadget_2ch_48k_to_xmos.yml
+configs/usb_gadget_2ch_48k_to_2ch_output.yml
 ```
 
-For the RASPIAUDIO 8xOUT use case where the host sends stereo audio and
-CamillaDSP expands it to eight XMOS output channels, use:
+For the RASPIAUDIO 8xOUT or 8xIN+8xOUT use case where the host sends stereo
+audio and CamillaDSP expands it to eight output channels, use:
 
 ```text
-configs/usb_gadget_2ch_48k_to_xmos_8out.yml
+configs/usb_gadget_2ch_48k_to_8xout.yml
 ```
 
 See the isolated walkthrough in:
 
 ```text
-docs/usb_gadget_2ch_to_8out_xmos.md
+docs/usb_gadget_2ch_to_8xout.md
 ```
 
 Install it on the Pi:
 
 ```bash
-install -o rosco -g rosco -m 0644 configs/usb_gadget_2ch_48k_to_xmos.yml /home/rosco/myCamillaDSP/configs/
+install -o rosco -g rosco -m 0644 configs/usb_gadget_2ch_48k_to_2ch_output.yml /home/rosco/myCamillaDSP/configs/
 ```
 
 The important devices are:
@@ -140,7 +140,9 @@ playback:
   format: S32_LE
 ```
 
-If your output card is not `XMOSDevice`, list devices and update the playback device:
+`XMOSDevice` is the Linux ALSA card name in this lab, not the RASPIAUDIO
+product name. If your output card has a different ALSA name, list devices and
+update the playback device:
 
 ```bash
 aplay -l
@@ -151,7 +153,7 @@ cat /proc/asound/cards
 Validate the config:
 
 ```bash
-/usr/local/bin/camilladsp -c /home/rosco/myCamillaDSP/configs/usb_gadget_2ch_48k_to_xmos.yml
+/usr/local/bin/camilladsp -c /home/rosco/myCamillaDSP/configs/usb_gadget_2ch_48k_to_2ch_output.yml
 ```
 
 ## systemd
@@ -159,7 +161,7 @@ Validate the config:
 The lab service uses the config above:
 
 ```ini
-ExecStart=/usr/local/bin/camilladsp -l info -o /var/log/camilladsp/camilladsp.log -w -p 1234 -s /home/rosco/myCamillaDSP/statefile.yml /home/rosco/myCamillaDSP/configs/usb_gadget_2ch_48k_to_xmos.yml
+ExecStart=/usr/local/bin/camilladsp -l info -o /var/log/camilladsp/camilladsp.log -w -p 1234 -s /home/rosco/myCamillaDSP/statefile.yml /home/rosco/myCamillaDSP/configs/usb_gadget_2ch_48k_to_2ch_output.yml
 ```
 
 Enable CamillaDSP and CamillaGUI:
@@ -290,7 +292,7 @@ Applied on `rosco@192.168.1.154`:
 - `dwc2` and `g_audio` restored in module load config
 - WM8960 module autoload removed from the minimal gadget profile
 - `raspiaudio-radio.service` and `raspiaudio-radio-boot.service` disabled
-- CamillaDSP config switched to `usb_gadget_2ch_48k_to_xmos.yml`
+- CamillaDSP config switched to `usb_gadget_2ch_48k_to_2ch_output.yml`
 - CamillaDSP and CamillaGUI enabled
 
 Validated on the Pi:

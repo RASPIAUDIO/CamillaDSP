@@ -64,20 +64,23 @@ configs/
   8in_8out_gain_test.yml     Variant with per-channel gain filters
   signalgen_500hz_out2_out3.yml
                               CamillaDSP SignalGenerator loopback config
-  usb_gadget_2ch_48k_to_xmos_8out.yml
-                              USB gadget stereo input to XMOS 8-output routing
-  xmos_8x8_physical_passthrough.yml
-                              XMOSDevice 8-input to 8-output routing
+  usb_gadget_2ch_48k_to_8xout.yml
+                              USB gadget stereo input to RASPIAUDIO 8-output routing
+  usb_gadget_2ch_48k_to_2ch_output.yml
+                              USB gadget stereo input to 2-output routing
+  8xin8xout_physical_passthrough.yml
+                              RASPIAUDIO 8-input to 8-output routing
 docs/
   installation_pi5.md        Raspberry Pi 5 installation
   camillagui_installation.md CamillaGUI web interface installation
   usb_audio_gadget_pi5.md    Pi 5 USB Audio Class 2 gadget setup
-  usb_gadget_2ch_to_8out_xmos.md
-                              USB stereo input to 8-output XMOS tutorial
+  usb_gadget_2ch_to_8xout.md
+                              USB stereo input to RASPIAUDIO 8-output tutorial
   carte_raspiaudio_8x8.md    ALSA inventory for the board
   camilladsp_signalgenerator_loopback_test.md
                               Loopback test using CamillaDSP SignalGenerator
-  xmos_channel_mapping.md     XMOSDevice 8x8 physical channel mapping
+  8xin8xout_channel_mapping.md
+                              RASPIAUDIO 8xIN+8xOUT ALSA channel mapping
   loopback_stereo_jack_test.md
                               Stereo jack loopback measurement
   tests_validation.md        Validation procedures
@@ -125,12 +128,13 @@ The user-local installation remains useful as a staging area and fallback.
 PipeWire is active on the Pi, but the CamillaDSP tests use ALSA directly through
 `hw:CARD=sndrpihifiberry,DEV=0` to avoid conversion and software remixing.
 
-Additional XMOS bridge validation on 2026-06-17:
+Additional RASPIAUDIO 8-output ALSA validation on 2026-06-17:
 
-- ALSA card: `XMOSDevice`
+- Output board: RASPIAUDIO 8xOUT / 8xIN+8xOUT output side
+- ALSA card: `XMOSDevice` (Linux device name used by the current driver path)
 - Capture device: `hw:CARD=XMOSDevice,DEV=1`
 - Playback device: `hw:CARD=XMOSDevice,DEV=0`
 - Capture/playback validated at 48000 Hz, 8 channels, `S32_LE`
 - Measured physical loopback mapping: logical 1:1 on all 8 channels
-- Validated configuration: `configs/xmos_8x8_physical_passthrough.yml`
-- Measurement notes: `docs/xmos_channel_mapping.md`
+- Validated configuration: `configs/8xin8xout_physical_passthrough.yml`
+- Measurement notes: `docs/8xin8xout_channel_mapping.md`

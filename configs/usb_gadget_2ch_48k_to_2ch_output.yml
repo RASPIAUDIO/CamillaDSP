@@ -1,6 +1,6 @@
 ---
-title: "RASPIAUDIO USB Audio Gadget 2ch 48k to XMOS I2S"
-description: "Host USB-C audio output -> Raspberry Pi UAC2Gadget stereo ALSA capture -> CamillaDSP -> XMOSDevice I2S playback. Fixed 48 kHz / S32_LE."
+title: "RASPIAUDIO USB Audio Gadget 2ch 48k to 2ch output"
+description: "Host USB-C audio output -> Raspberry Pi UAC2Gadget stereo ALSA capture -> CamillaDSP -> RASPIAUDIO 2ch playback path. XMOSDevice is the Linux ALSA card name in the lab. Fixed 48 kHz / S32_LE."
 
 devices:
   samplerate: 48000

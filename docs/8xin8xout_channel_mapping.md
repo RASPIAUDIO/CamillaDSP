@@ -1,7 +1,11 @@
-# XMOS 8x8 channel mapping
+# RASPIAUDIO 8xIN+8xOUT channel mapping
 
 This test checks how the logical ALSA channels of `XMOSDevice` map to the
 physical 8 input / 8 output blocks.
+
+`XMOSDevice` is the Linux ALSA card name used by the current driver path on the
+lab Raspberry Pi. It is not the product name; the output hardware is
+RASPIAUDIO 8xOUT or the output side of RASPIAUDIO 8xIN+8xOUT.
 
 ## Hardware setup
 
@@ -17,8 +21,8 @@ same block:
 - physical output 7 to physical input 7
 - physical output 8 to physical input 8
 
-CamillaDSP was stopped during the measurement so ALSA could access the XMOS
-capture and playback devices directly.
+CamillaDSP was stopped during the measurement so ALSA could access the capture
+and playback devices directly.
 
 ## Test method
 
@@ -60,7 +64,7 @@ Artifacts:
 | 6 | 6 | 73.68 dB |
 | 7 | 7 | 73.30 dB |
 
-The mapping is therefore logical 1:1 for this XMOS ALSA device:
+The mapping is therefore logical 1:1 for this ALSA device:
 
 ```text
 out0 -> in0
@@ -75,7 +79,7 @@ out7 -> in7
 
 ## CamillaDSP profile
 
-Use `configs/xmos_8x8_physical_passthrough.yml`.
+Use `configs/8xin8xout_physical_passthrough.yml`.
 
 The profile uses:
 

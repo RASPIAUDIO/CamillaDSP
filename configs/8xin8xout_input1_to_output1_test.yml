@@ -1,5 +1,5 @@
 ---
-title: "RASPIAUDIO XMOS input 1 to output 1 test"
+title: "RASPIAUDIO 8xIN+8xOUT input 1 to output 1 test"
 description: "Diagnostic: physical input 1 to physical output 1 only, with reduced gain."
 
 devices:

@@ -1,16 +1,16 @@
 ---
-title: "RASPIAUDIO XMOS 8xIN 8xOUT physical passthrough"
-description: "Routage physique mesure sur XMOSDevice: chaque entree physique revient vers la sortie physique correspondante."
+title: "RASPIAUDIO USB Audio Gadget 2ch 48k to 8xOUT"
+description: "Host USB-C stereo output -> Raspberry Pi UAC2Gadget 2ch capture -> CamillaDSP -> RASPIAUDIO 8xOUT / 8xIN+8xOUT 8ch playback. L/R duplicated to four stereo output pairs."
 
 devices:
   samplerate: 48000
-  chunksize: 1024
-  target_level: 1024
+  chunksize: 256
+  target_level: 768
   adjust_period: 10
   capture:
     type: Alsa
-    channels: 8
-    device: "hw:CARD=XMOSDevice,DEV=1"
+    channels: 2
+    device: "hw:CARD=UAC2Gadget,DEV=0"
     format: S32_LE
   playback:
     type: Alsa
@@ -19,9 +19,9 @@ devices:
     format: S32_LE
 
 mixers:
-  xmos_physical_passthrough_8x8:
+  usb_stereo_to_8xout:
     channels:
-      in: 8
+      in: 2
       out: 8
     mapping:
       - dest: 0
@@ -36,35 +36,35 @@ mixers:
             inverted: false
       - dest: 2
         sources:
-          - channel: 2
+          - channel: 0
             gain: 0
             inverted: false
       - dest: 3
         sources:
-          - channel: 3
+          - channel: 1
             gain: 0
             inverted: false
       - dest: 4
         sources:
-          - channel: 4
+          - channel: 0
             gain: 0
             inverted: false
       - dest: 5
         sources:
-          - channel: 5
+          - channel: 1
             gain: 0
             inverted: false
       - dest: 6
         sources:
-          - channel: 6
+          - channel: 0
             gain: 0
             inverted: false
       - dest: 7
         sources:
-          - channel: 7
+          - channel: 1
             gain: 0
             inverted: false
 
 pipeline:
   - type: Mixer
-    name: xmos_physical_passthrough_8x8
+    name: usb_stereo_to_8xout
