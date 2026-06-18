@@ -106,6 +106,11 @@ scripts/
                               Stereo jack loopback test and analysis
   test_camilladsp_signalgen_loopback.sh
                               SignalGenerator loopback test and analysis
+profiles/
+  usb_gadget_7_1_48k_8xout/
+                              Self-contained 7.1 USB gadget profile, installer,
+                              verifier, test WAV generator, and 48/96 kHz
+                              bandwidth notes
 systemd/
   camilladsp.service         System-wide service
   camillagui.service         CamillaGUI web service
@@ -147,3 +152,5 @@ USB Audio Gadget profiles:
 
 - 2-channel host-to-Pi input to 8 outputs: `docs/usb_gadget_2ch_to_8xout.md`
 - 8-channel host-to-Pi input to 8 outputs: `docs/usb_gadget_8ch_to_8xout.md`
+- Self-contained 7.1 / 48 kHz profile bundle:
+  `profiles/usb_gadget_7_1_48k_8xout/README.md`
