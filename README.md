@@ -14,6 +14,8 @@ flowchart LR
   Computer --> Cable --> Pi --> Board --> Outputs
 ```
 
+![RASPIAUDIO 8xOUT Raspberry Pi 5 USB wiring](docs/assets/raspiaudio-8xout-pi5-usb-wiring.png)
+
 ![RASPIAUDIO 8xOUT board](docs/assets/raspiaudio-8xout-board.png)
 
 ## What is it for?
