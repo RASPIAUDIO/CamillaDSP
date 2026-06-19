@@ -22,8 +22,9 @@ configuration.
 - RASPIAUDIO 8xOUT, or RASPIAUDIO 8xIN+8xOUT
 - Official Raspberry Pi 5 power supply
 - microSD card, 16 GB or larger
-- USB-C data cable, or a USB-C splitter that passes USB data to the computer
+- USB-C data cable, or this [USB-C power/data splitter](https://amzn.to/4aZwswF)
 - Windows, macOS, or Linux computer
+- Free Raspberry Pi Connect account: <https://connect.raspberrypi.com/>
 
 ## 1. Flash Raspberry Pi OS
 
@@ -39,26 +40,27 @@ configuration.
    - hostname: `raspiaudio-dsp`
    - username and password: choose your own
    - Wi-Fi: configure it if you will not use Ethernet
-   - SSH: enabled
+   - Raspberry Pi Connect: enabled and linked to your account
    - locale, keyboard, and timezone
 8. Write the image.
 9. Put the microSD card in the Raspberry Pi.
 10. Mount the RASPIAUDIO board on the Raspberry Pi 5.
 11. Power the Raspberry Pi and wait one or two minutes.
 
-## 2. Connect to the Raspberry Pi
+## 2. Open a Remote Shell
 
-From Windows PowerShell, macOS Terminal, or Linux Terminal:
+Open this page in a browser and sign in:
+
+```text
+https://connect.raspberrypi.com/
+```
+
+Then select your Raspberry Pi and open `Remote Shell`.
+
+If Raspberry Pi Connect was not available in Imager, use SSH as a fallback:
 
 ```bash
 ssh <your-user>@raspiaudio-dsp.local
-```
-
-If `.local` does not work, find the Raspberry Pi IP address in your router and
-use:
-
-```bash
-ssh <your-user>@<raspberry-pi-ip>
 ```
 
 ## 3. Run the one-command installer
@@ -189,4 +191,5 @@ Do not use the 96 kHz mode for the beginner setup. The safe default is
 
 - Raspberry Pi OS installation: <https://www.raspberrypi.com/documentation/computers/getting-started.html>
 - Raspberry Pi Imager download: <https://www.raspberrypi.com/software/>
+- Raspberry Pi Connect: <https://connect.raspberrypi.com/>
 - CamillaDSP: <https://github.com/HEnquist/camilladsp>

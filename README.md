@@ -41,8 +41,9 @@ channels.
 - microSD card, 16 GB or larger
 - Raspberry Pi OS 64-bit
 - [RASPIAUDIO 8xOUT](https://raspiaudio.com/product/8xout/)
-- USB-C splitter with one USB-C power input and one USB-C data connection to the computer
+- [USB-C power/data splitter](https://amzn.to/4aZwswF)
 - Windows, macOS, or Linux computer
+- Free [Raspberry Pi Connect](https://connect.raspberrypi.com/) account
 
 The same software path also works with the output side of the RASPIAUDIO
 8xIN+8xOUT.
@@ -53,14 +54,14 @@ The same software path also works with the output side of the RASPIAUDIO
    - Install [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
    - Choose `Raspberry Pi 5`.
    - Choose `Raspberry Pi OS Lite (64-bit)` or `Raspberry Pi OS with desktop (64-bit)`.
-   - In Imager settings, set hostname, username, password, Wi-Fi if needed, and enable SSH.
+   - In Imager settings, set hostname, username, password, and Wi-Fi if needed.
+   - In the Raspberry Pi Connect tab, enable Connect and link it to your account.
    - Write the image, insert the microSD card, mount the RASPIAUDIO board, and boot.
 
-2. SSH into the Raspberry Pi
-
-   ```bash
-   ssh <your-user>@<raspberry-pi-ip>
-   ```
+2. Open a Remote Shell
+   - Go to [connect.raspberrypi.com](https://connect.raspberrypi.com/).
+   - Select your Raspberry Pi.
+   - Open `Remote Shell`.
 
 3. Run the installer
 
