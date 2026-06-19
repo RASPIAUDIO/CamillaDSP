@@ -16,8 +16,6 @@ flowchart LR
 
 ![RASPIAUDIO 8xOUT Raspberry Pi 5 USB wiring](docs/assets/raspiaudio-8xout-pi5-usb-wiring.png)
 
-![RASPIAUDIO 8xOUT board](docs/assets/raspiaudio-8xout-board.png)
-
 ## What is it for?
 
 Use it when the music comes from a computer and you want the Raspberry Pi to do
