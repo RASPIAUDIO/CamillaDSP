@@ -13,12 +13,12 @@ Validated target shape:
 - USB gadget function: `g_audio`
 - Host-facing USB profile: UAC2 7.1 / 8-channel playback endpoint
 - Pi-side ALSA capture: `hw:CARD=UAC2Gadget,DEV=0`, 8 channels
-- Pi-side ALSA playback: `hw:CARD=XMOSDevice,DEV=0`, 8 channels
+- Pi-side ALSA playback: `hw:CARD=sndrpihifiberry,DEV=0`, 8 channels
 - Output hardware: RASPIAUDIO 8xOUT or RASPIAUDIO 8xIN+8xOUT output side
 - Audio format: `48000 Hz`, `S32_LE`
 - CamillaDSP profile: `configs/usb_gadget_8ch_48k_to_8xout.yml`
 
-`XMOSDevice` is the Linux ALSA card name used by the current driver path on the
+`sndrpihifiberry` is the Linux ALSA card name used by the current driver path on the
 lab Raspberry Pi. It is not the product name.
 
 ## Signal path
@@ -29,7 +29,7 @@ Windows / macOS / Linux host
     -> Raspberry Pi 5 USB-C gadget
     -> ALSA capture: UAC2Gadget, 8 channels
     -> CamillaDSP
-    -> ALSA playback: XMOSDevice, 8 channels
+    -> ALSA playback: sndrpihifiberry, 8 channels
     -> RASPIAUDIO 8xOUT / 8xIN+8xOUT outputs
 ```
 
@@ -115,7 +115,7 @@ In CamillaGUI:
 2. Open **Devices** and check:
    - capture: `hw:CARD=UAC2Gadget,DEV=0`
    - capture channels: `8`
-   - playback: `hw:CARD=XMOSDevice,DEV=0`
+   - playback: `hw:CARD=sndrpihifiberry,DEV=0`
    - playback channels: `8`
 3. Open **Mixers** and check `usb_8ch_to_8xout`.
 4. Press **Apply** and then **Save**.

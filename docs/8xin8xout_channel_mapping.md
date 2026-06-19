@@ -1,9 +1,9 @@
 # RASPIAUDIO 8xIN+8xOUT channel mapping
 
-This test checks how the logical ALSA channels of `XMOSDevice` map to the
+This test checks how the logical ALSA channels of `sndrpihifiberry` map to the
 physical 8 input / 8 output blocks.
 
-`XMOSDevice` is the Linux ALSA card name used by the current driver path on the
+`sndrpihifiberry` is the Linux ALSA card name used by the current driver path on the
 lab Raspberry Pi. It is not the product name; the output hardware is
 RASPIAUDIO 8xOUT or the output side of RASPIAUDIO 8xIN+8xOUT.
 
@@ -47,11 +47,11 @@ logical mapping.
 
 Artifacts:
 
-- `artifacts/channel_map_latest/xmos_8out_sequential_test_s32.wav`
-- `artifacts/channel_map_latest/xmos_8in_loopback_record_s32.wav`
-- `artifacts/channel_map_latest/xmos_channel_mapping_analysis.csv`
-- `artifacts/channel_map_latest/xmos_channel_mapping_analysis.json`
-- `artifacts/channel_map_latest/xmos_channel_mapping_analysis.md`
+- `artifacts/channel_map_latest/raspiaudio_8out_sequential_test_s32.wav`
+- `artifacts/channel_map_latest/raspiaudio_8in_loopback_record_s32.wav`
+- `artifacts/channel_map_latest/raspiaudio_channel_mapping_analysis.csv`
+- `artifacts/channel_map_latest/raspiaudio_channel_mapping_analysis.json`
+- `artifacts/channel_map_latest/raspiaudio_channel_mapping_analysis.md`
 
 | Logical output | Strongest logical input | Margin over second input |
 |---:|---:|---:|
@@ -83,8 +83,8 @@ Use `configs/8xin8xout_physical_passthrough.yml`.
 
 The profile uses:
 
-- capture: `hw:CARD=XMOSDevice,DEV=1`
-- playback: `hw:CARD=XMOSDevice,DEV=0`
+- capture: `hw:CARD=sndrpihifiberry,DEV=1`
+- playback: `hw:CARD=sndrpihifiberry,DEV=0`
 - format: `S32_LE`
 - sample rate: `48000`
 - routing: `dest n <- source n` for all 8 channels

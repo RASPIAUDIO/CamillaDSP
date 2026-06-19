@@ -102,20 +102,20 @@ See `docs/camilladsp_signalgenerator_loopback_test.md`.
 
 ## RASPIAUDIO 8-output Physical Mapping Test
 
-For the RASPIAUDIO 8-output ALSA profile (`XMOSDevice` in the current lab),
+For the RASPIAUDIO 8-output ALSA profile (`sndrpihifiberry` in the current lab),
 patch each physical output to the corresponding physical input on the same
 block, then stop CamillaDSP so ALSA can access the capture and playback devices
 directly:
 
 ```bash
 sudo systemctl stop camilladsp.service
-arecord -D hw:CARD=XMOSDevice,DEV=1 -f S32_LE -r 48000 -c 8 -d 9 xmos_8in_loopback_record_s32.wav
+arecord -D hw:CARD=sndrpihifiberry,DEV=1 -f S32_LE -r 48000 -c 8 -d 9 raspiaudio_8in_loopback_record_s32.wav
 ```
 
 In another shell during the recording:
 
 ```bash
-aplay -D hw:CARD=XMOSDevice,DEV=0 xmos_8out_sequential_test_s32.wav
+aplay -D hw:CARD=sndrpihifiberry,DEV=0 raspiaudio_8out_sequential_test_s32.wav
 ```
 
 The 2026-06-17 measurement found a logical 1:1 mapping on all 8 channels, with

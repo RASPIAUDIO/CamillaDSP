@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-OUTPUT_CARD="${OUTPUT_CARD:-XMOSDevice}"
+OUTPUT_CARD="${OUTPUT_CARD:-sndrpihifiberry}"
 OUTPUT_DEV="${OUTPUT_DEV:-0}"
 CAMILLA_CONFIG_DIR="${CAMILLA_CONFIG_DIR:-/home/${SUDO_USER:-$USER}/myCamillaDSP/configs}"
 CAMILLA_CONFIG="${CAMILLA_CONFIG:-$CAMILLA_CONFIG_DIR/usb_gadget_2ch_48k_to_${OUTPUT_CARD}.yml}"

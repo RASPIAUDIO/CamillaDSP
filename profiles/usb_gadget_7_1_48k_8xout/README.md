@@ -37,7 +37,7 @@ The gadget uses channel mask `0x63f`, the standard 7.1 home-theater layout:
 | 6 | SL | 6 | OUT7 |
 | 7 | SR | 7 | OUT8 |
 
-The ALSA card name `XMOSDevice` is the current Linux device name for the
+The ALSA card name `sndrpihifiberry` is the current Linux device name for the
 RASPIAUDIO output path on the lab Pi. It is not the product name.
 
 ## Install on the Raspberry Pi
@@ -83,7 +83,7 @@ In the GUI:
 2. Open **Devices** and check:
    - capture device: `hw:CARD=UAC2Gadget,DEV=0`
    - capture channels: `8`
-   - playback device: `hw:CARD=XMOSDevice,DEV=0`
+   - playback device: `hw:CARD=sndrpihifiberry,DEV=0`
    - playback channels: `8`
    - sample rate: `48000`
 3. Open **Mixers** and check `usb_7_1_to_8xout`.

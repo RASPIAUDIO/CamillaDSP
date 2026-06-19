@@ -6,7 +6,7 @@ CHANNEL_MASK="${CHANNEL_MASK:-0x63f}"
 SAMPLE_SIZE_BYTES="${SAMPLE_SIZE_BYTES:-4}"
 PRODUCT_ID="${PRODUCT_ID:-0x0108}"
 PRODUCT_SUFFIX="${PRODUCT_SUFFIX:-7_1_48k}"
-OUTPUT_CARD="${OUTPUT_CARD:-XMOSDevice}"
+OUTPUT_CARD="${OUTPUT_CARD:-sndrpihifiberry}"
 OUTPUT_DEV="${OUTPUT_DEV:-0}"
 PI_USER="${SUDO_USER:-$USER}"
 CAMILLA_CONFIG_DIR="${CAMILLA_CONFIG_DIR:-/home/${PI_USER}/myCamillaDSP/configs}"
@@ -119,7 +119,7 @@ text = Path(src).read_text()
 text = text.replace('samplerate: 48000', f'samplerate: {rate}')
 text = text.replace('chunksize: 256', 'chunksize: 256')
 text = text.replace('target_level: 768', 'target_level: 768')
-text = text.replace('device: "hw:CARD=XMOSDevice,DEV=0"', f'device: "hw:CARD={card},DEV={dev}"')
+text = text.replace('device: "hw:CARD=sndrpihifiberry,DEV=0"', f'device: "hw:CARD={card},DEV={dev}"')
 text = text.replace('7.1 48k', f'7.1 {int(rate)//1000}k')
 text = text.replace('48k to 8xOUT', f'{int(rate)//1000}k to 8xOUT')
 Path(dst).write_text(text)

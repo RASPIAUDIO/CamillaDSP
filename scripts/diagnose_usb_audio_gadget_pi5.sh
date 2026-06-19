@@ -6,7 +6,7 @@ tr -d '\0' </proc/device-tree/model 2>/dev/null || true
 echo
 
 echo "== Boot config =="
-grep -nE 'otg_mode|dwc2|xmos|dtoverlay=|dtparam=i2s' /boot/firmware/config.txt 2>/dev/null || true
+grep -nE 'otg_mode|dwc2|dtoverlay=|dtparam=i2s' /boot/firmware/config.txt 2>/dev/null || true
 echo
 
 echo "== Modules =="

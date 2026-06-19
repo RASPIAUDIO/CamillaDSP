@@ -23,6 +23,21 @@ Tested state on 2026-05-28:
 
 ## Quick Start
 
+For a beginner-friendly full setup of a Raspberry Pi 5 as a USB 7.1 sound card
+with RASPIAUDIO 8xOUT passthrough, use:
+
+```bash
+git clone https://github.com/RASPIAUDIO/CamillaDSP.git myCamillaDSP
+cd myCamillaDSP
+sudo ./install_raspiaudio_usb_7_1.sh
+```
+
+Full guide:
+
+```text
+profiles/raspiaudio_8xout_usb_7_1_quickstart/README.md
+```
+
 On the Raspberry Pi:
 
 ```bash
@@ -140,9 +155,7 @@ PipeWire is active on the Pi, but the CamillaDSP tests use ALSA directly through
 Additional RASPIAUDIO 8-output ALSA validation on 2026-06-17:
 
 - Output board: RASPIAUDIO 8xOUT / 8xIN+8xOUT output side
-- ALSA card: `XMOSDevice` (Linux device name used by the current driver path)
-- Capture device: `hw:CARD=XMOSDevice,DEV=1`
-- Playback device: `hw:CARD=XMOSDevice,DEV=0`
+- ALSA playback device: detected automatically by the quick-start installer
 - Capture/playback validated at 48000 Hz, 8 channels, `S32_LE`
 - Measured physical loopback mapping: logical 1:1 on all 8 channels
 - Validated configuration: `configs/8xin8xout_physical_passthrough.yml`

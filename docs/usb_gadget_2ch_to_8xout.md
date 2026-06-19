@@ -14,11 +14,11 @@ Validated lab target:
 - USB gadget function: `g_audio`
 - USB audio input on the Pi: `hw:CARD=UAC2Gadget,DEV=0`
 - Output hardware: [RASPIAUDIO 8xOUT](https://raspiaudio.com/product/8xout/) or [RASPIAUDIO 8xIN+8xOUT](https://raspiaudio.com/product/8xin8xout/)
-- 8-channel ALSA playback device: `hw:CARD=XMOSDevice,DEV=0`
+- 8-channel ALSA playback device: `hw:CARD=sndrpihifiberry,DEV=0`
 - Audio format: `48000 Hz`, `S32_LE`
 - CamillaDSP profile: `configs/usb_gadget_2ch_48k_to_8xout.yml`
 
-`XMOSDevice` is the Linux ALSA card name used by the current driver path on the
+`sndrpihifiberry` is the Linux ALSA card name used by the current driver path on the
 lab Raspberry Pi. It is not the product name; the audio board is RASPIAUDIO
 8xOUT, and the same output profile also works with the output side of
 RASPIAUDIO 8xIN+8xOUT.
@@ -31,7 +31,7 @@ Windows / macOS / Linux host
     -> Raspberry Pi 5 USB-C gadget
     -> ALSA capture: UAC2Gadget, 2 channels
     -> CamillaDSP
-    -> ALSA playback: XMOSDevice, 8 channels
+    -> ALSA playback: sndrpihifiberry, 8 channels
     -> RASPIAUDIO 8xOUT / 8xIN+8xOUT outputs
 ```
 
@@ -158,8 +158,8 @@ Expected:
 card N: UAC2Gadget
   capture: hw:CARD=UAC2Gadget,DEV=0
 
-card M: XMOSDevice
-  playback: hw:CARD=XMOSDevice,DEV=0
+card M: sndrpihifiberry
+  playback: hw:CARD=sndrpihifiberry,DEV=0
 ```
 
 On Windows, the device should appear as a USB audio output/speaker endpoint.
@@ -250,7 +250,7 @@ In the GUI:
 3. Open **Devices** and check:
    - capture: `hw:CARD=UAC2Gadget,DEV=0`
    - capture channels: `2`
-   - playback: `hw:CARD=XMOSDevice,DEV=0`
+   - playback: `hw:CARD=sndrpihifiberry,DEV=0`
    - playback channels: `8`
 4. Open **Mixers** and check `usb_stereo_to_8xout`.
 5. Open **Pipeline** and check that the mixer is present.

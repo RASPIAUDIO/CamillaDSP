@@ -10,7 +10,7 @@ Current validated target:
 - Host-facing USB profile: UAC2 playback endpoint, stereo or 8-channel
 - Gadget-side ALSA device: `hw:CARD=UAC2Gadget,DEV=0` capture
 - DSP: CamillaDSP `4.1.3`
-- DSP output in this lab: RASPIAUDIO 8xOUT / 8xIN+8xOUT via `hw:CARD=XMOSDevice,DEV=0`
+- DSP output in this lab: RASPIAUDIO 8xOUT / 8xIN+8xOUT via `hw:CARD=sndrpihifiberry,DEV=0`
 - Audio format: `48000 Hz`, `S32_LE`, 2 or 8 host-to-Pi channels
 
 Important vocabulary: in Linux USB gadget audio, the host's playback stream appears on the Pi as an ALSA capture device. That is expected.
@@ -54,13 +54,9 @@ If present, disable host-only OTG mode:
 #otg_mode=1
 ```
 
-For the current lab output path, the RASPIAUDIO 8-output driver overlay is also active:
-
-```ini
-dtoverlay=xmos-device
-```
-
-If you use another output card, keep the USB gadget lines the same and change only the CamillaDSP playback device.
+The RASPIAUDIO HAT EEPROM normally exposes the 8-output audio card
+automatically. Keep the USB gadget lines the same and let the quick-start
+installer detect the ALSA playback device for CamillaDSP.
 
 ## Kernel modules
 
@@ -155,11 +151,11 @@ capture:
 playback:
   type: Alsa
   channels: 2
-  device: "hw:CARD=XMOSDevice,DEV=0"
+  device: "hw:CARD=sndrpihifiberry,DEV=0"
   format: S32_LE
 ```
 
-`XMOSDevice` is the Linux ALSA card name in this lab, not the RASPIAUDIO
+`sndrpihifiberry` is the Linux ALSA card name in this lab, not the RASPIAUDIO
 product name. If your output card has a different ALSA name, list devices and
 update the playback device:
 
@@ -228,7 +224,7 @@ Expected Pi-side result with the current lab card:
 
 ```text
 card 2: UAC2Gadget [UAC2_Gadget]
-card 3: XMOSDevice [XMOSDevice]
+card 3: sndrpihifiberry [sndrpihifiberry]
 ```
 
 Expected CamillaDSP status:
@@ -319,7 +315,7 @@ Validated on the Pi:
 ```text
 /sys/class/udc/1000480000.usb exists
 UAC2Gadget appears in arecord -l
-XMOSDevice appears in aplay -l
+sndrpihifiberry appears in aplay -l
 camilladsp.service is active
 ```
 

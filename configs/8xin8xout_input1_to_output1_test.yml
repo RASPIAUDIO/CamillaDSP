@@ -10,12 +10,12 @@ devices:
   capture:
     type: Alsa
     channels: 8
-    device: "hw:CARD=XMOSDevice,DEV=1"
+    device: "hw:CARD=sndrpihifiberry,DEV=1"
     format: S32_LE
   playback:
     type: Alsa
     channels: 8
-    device: "hw:CARD=XMOSDevice,DEV=0"
+    device: "hw:CARD=sndrpihifiberry,DEV=0"
     format: S32_LE
 
 mixers:

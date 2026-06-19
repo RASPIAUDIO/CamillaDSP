@@ -1,6 +1,6 @@
 ---
 title: "RASPIAUDIO 8xIN+8xOUT physical passthrough"
-description: "Routage physique mesure sur RASPIAUDIO 8xIN+8xOUT. XMOSDevice est le nom ALSA utilise par Linux."
+description: "Routage physique mesure sur RASPIAUDIO 8xIN+8xOUT. sndrpihifiberry est le nom ALSA utilise par Linux."
 
 devices:
   samplerate: 48000
@@ -10,12 +10,12 @@ devices:
   capture:
     type: Alsa
     channels: 8
-    device: "hw:CARD=XMOSDevice,DEV=1"
+    device: "hw:CARD=sndrpihifiberry,DEV=1"
     format: S32_LE
   playback:
     type: Alsa
     channels: 8
-    device: "hw:CARD=XMOSDevice,DEV=0"
+    device: "hw:CARD=sndrpihifiberry,DEV=0"
     format: S32_LE
 
 mixers:
