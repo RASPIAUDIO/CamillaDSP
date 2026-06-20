@@ -271,6 +271,26 @@ pipeline:
 EOF
 
   chown "$TARGET_USER:audio" "$CURRENT_CONFIG"
+  if compgen -G "$REPO_DIR/configs/*.yml" >/dev/null; then
+    install -m 0644 -o "$TARGET_USER" -g audio "$REPO_DIR"/configs/*.yml "$CONFIG_DIR"/
+    python3 - "$CONFIG_DIR" "$playback_device" <<'PY'
+import pathlib
+import sys
+
+config_dir = pathlib.Path(sys.argv[1])
+playback_device = sys.argv[2]
+new = f'device: "{playback_device}"'
+
+for path in config_dir.glob("*.yml"):
+    text = path.read_text(encoding="utf-8")
+    updated = text.replace('device: "hw:CARD=sndrpihifiberry,DEV=0"', new)
+    updated = updated.replace("device: hw:CARD=sndrpihifiberry,DEV=0", new)
+    if updated != text:
+        path.write_text(updated, encoding="utf-8")
+PY
+    echo "Installed example CamillaDSP profiles in $CONFIG_DIR"
+  fi
+
   if /usr/local/bin/camilladsp --help 2>&1 | grep -q -- "--check"; then
     /usr/local/bin/camilladsp --check "$CURRENT_CONFIG"
   else

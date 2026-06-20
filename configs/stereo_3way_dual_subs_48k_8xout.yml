@@ -1,0 +1,1046 @@
+---
+title: RASPIAUDIO stereo 3-way + dual subs active crossover 48k
+description: USB stereo input -> CamillaDSP -> RASPIAUDIO 8xOUT. OUT1/2/3/4 are left tweeter/mid/woofer/sub, OUT5/6/7/8 are
+  right tweeter/mid/woofer/sub. Safe startup gain included.
+devices:
+  samplerate: 48000
+  chunksize: 256
+  target_level: 768
+  adjust_period: 10
+  capture:
+    type: Alsa
+    channels: 2
+    device: hw:CARD=UAC2Gadget,DEV=0
+    format: S32_LE
+  playback:
+    type: Alsa
+    channels: 8
+    device: hw:CARD=sndrpihifiberry,DEV=0
+    format: S32_LE
+mixers:
+  usb_stereo_to_stereo_3way_dual_subs_8xout:
+    channels:
+      in: 2
+      out: 8
+    description: USB left feeds OUT1-OUT4. USB right feeds OUT5-OUT8.
+    mapping:
+    - dest: 0
+      sources:
+      - channel: 0
+        gain: 0.0
+        inverted: false
+    - dest: 1
+      sources:
+      - channel: 0
+        gain: 0.0
+        inverted: false
+    - dest: 2
+      sources:
+      - channel: 0
+        gain: 0.0
+        inverted: false
+    - dest: 3
+      sources:
+      - channel: 0
+        gain: 0.0
+        inverted: false
+    - dest: 4
+      sources:
+      - channel: 1
+        gain: 0.0
+        inverted: false
+    - dest: 5
+      sources:
+      - channel: 1
+        gain: 0.0
+        inverted: false
+    - dest: 6
+      sources:
+      - channel: 1
+        gain: 0.0
+        inverted: false
+    - dest: 7
+      sources:
+      - channel: 1
+        gain: 0.0
+        inverted: false
+filters:
+  Master_Safety_Gain_minus_12dB:
+    type: Gain
+    description: Global safety attenuation. Raise only after testing at low amplifier volume.
+    parameters:
+      gain: -12.0
+      inverted: false
+      mute: false
+      scale: dB
+  Sub_Lowpass_80Hz_LR24:
+    type: BiquadCombo
+    description: Sub Lowpass 80Hz LR24 crossover section.
+    parameters:
+      type: LinkwitzRileyLowpass
+      freq: 80
+      order: 4
+  Woofer_Highpass_80Hz_LR24:
+    type: BiquadCombo
+    description: Woofer Highpass 80Hz LR24 crossover section.
+    parameters:
+      type: LinkwitzRileyHighpass
+      freq: 80
+      order: 4
+  Woofer_Lowpass_300Hz_LR24:
+    type: BiquadCombo
+    description: Woofer Lowpass 300Hz LR24 crossover section.
+    parameters:
+      type: LinkwitzRileyLowpass
+      freq: 300
+      order: 4
+  Midrange_Highpass_300Hz_LR24:
+    type: BiquadCombo
+    description: Midrange Highpass 300Hz LR24 crossover section.
+    parameters:
+      type: LinkwitzRileyHighpass
+      freq: 300
+      order: 4
+  Midrange_Lowpass_2500Hz_LR24:
+    type: BiquadCombo
+    description: Midrange Lowpass 2500Hz LR24 crossover section.
+    parameters:
+      type: LinkwitzRileyLowpass
+      freq: 2500
+      order: 4
+  Tweeter_Highpass_2500Hz_LR24:
+    type: BiquadCombo
+    description: Tweeter Highpass 2500Hz LR24 crossover section.
+    parameters:
+      type: LinkwitzRileyHighpass
+      freq: 2500
+      order: 4
+  L_Tweeter_PEQ_01:
+    type: Biquad
+    description: L_Tweeter PEQ placeholder 01. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 2500
+      gain: 0.0
+      q: 1.0
+  L_Tweeter_PEQ_02:
+    type: Biquad
+    description: L_Tweeter PEQ placeholder 02. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 3500
+      gain: 0.0
+      q: 1.0
+  L_Tweeter_PEQ_03:
+    type: Biquad
+    description: L_Tweeter PEQ placeholder 03. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 5000
+      gain: 0.0
+      q: 1.0
+  L_Tweeter_PEQ_04:
+    type: Biquad
+    description: L_Tweeter PEQ placeholder 04. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 7000
+      gain: 0.0
+      q: 1.0
+  L_Tweeter_PEQ_05:
+    type: Biquad
+    description: L_Tweeter PEQ placeholder 05. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 9000
+      gain: 0.0
+      q: 1.0
+  L_Tweeter_PEQ_06:
+    type: Biquad
+    description: L_Tweeter PEQ placeholder 06. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 11000
+      gain: 0.0
+      q: 1.0
+  L_Tweeter_PEQ_07:
+    type: Biquad
+    description: L_Tweeter PEQ placeholder 07. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 13000
+      gain: 0.0
+      q: 1.0
+  L_Tweeter_PEQ_08:
+    type: Biquad
+    description: L_Tweeter PEQ placeholder 08. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 15000
+      gain: 0.0
+      q: 1.0
+  L_Tweeter_PEQ_09:
+    type: Biquad
+    description: L_Tweeter PEQ placeholder 09. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 17000
+      gain: 0.0
+      q: 1.0
+  L_Tweeter_PEQ_10:
+    type: Biquad
+    description: L_Tweeter PEQ placeholder 10. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 19000
+      gain: 0.0
+      q: 1.0
+  L_Tweeter_Output_Trim_minus_6dB:
+    type: Gain
+    description: L_Tweeter output trim. Default -6 dB for safe first power-up.
+    parameters:
+      gain: -6.0
+      inverted: false
+      mute: false
+      scale: dB
+  L_Tweeter_Delay_ms:
+    type: Delay
+    description: L_Tweeter time alignment delay in milliseconds. Default 0 ms.
+    parameters:
+      delay: 0.0
+      unit: ms
+      subsample: false
+  L_Midrange_PEQ_01:
+    type: Biquad
+    description: L_Midrange PEQ placeholder 01. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 300
+      gain: 0.0
+      q: 1.0
+  L_Midrange_PEQ_02:
+    type: Biquad
+    description: L_Midrange PEQ placeholder 02. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 450
+      gain: 0.0
+      q: 1.0
+  L_Midrange_PEQ_03:
+    type: Biquad
+    description: L_Midrange PEQ placeholder 03. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 630
+      gain: 0.0
+      q: 1.0
+  L_Midrange_PEQ_04:
+    type: Biquad
+    description: L_Midrange PEQ placeholder 04. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 900
+      gain: 0.0
+      q: 1.0
+  L_Midrange_PEQ_05:
+    type: Biquad
+    description: L_Midrange PEQ placeholder 05. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 1200
+      gain: 0.0
+      q: 1.0
+  L_Midrange_PEQ_06:
+    type: Biquad
+    description: L_Midrange PEQ placeholder 06. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 1600
+      gain: 0.0
+      q: 1.0
+  L_Midrange_PEQ_07:
+    type: Biquad
+    description: L_Midrange PEQ placeholder 07. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 2000
+      gain: 0.0
+      q: 1.0
+  L_Midrange_PEQ_08:
+    type: Biquad
+    description: L_Midrange PEQ placeholder 08. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 2500
+      gain: 0.0
+      q: 1.0
+  L_Midrange_PEQ_09:
+    type: Biquad
+    description: L_Midrange PEQ placeholder 09. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 3150
+      gain: 0.0
+      q: 1.0
+  L_Midrange_PEQ_10:
+    type: Biquad
+    description: L_Midrange PEQ placeholder 10. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 4000
+      gain: 0.0
+      q: 1.0
+  L_Midrange_Output_Trim_minus_6dB:
+    type: Gain
+    description: L_Midrange output trim. Default -6 dB for safe first power-up.
+    parameters:
+      gain: -6.0
+      inverted: false
+      mute: false
+      scale: dB
+  L_Midrange_Delay_ms:
+    type: Delay
+    description: L_Midrange time alignment delay in milliseconds. Default 0 ms.
+    parameters:
+      delay: 0.0
+      unit: ms
+      subsample: false
+  L_Woofer_PEQ_01:
+    type: Biquad
+    description: L_Woofer PEQ placeholder 01. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 80
+      gain: 0.0
+      q: 1.0
+  L_Woofer_PEQ_02:
+    type: Biquad
+    description: L_Woofer PEQ placeholder 02. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 110
+      gain: 0.0
+      q: 1.0
+  L_Woofer_PEQ_03:
+    type: Biquad
+    description: L_Woofer PEQ placeholder 03. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 150
+      gain: 0.0
+      q: 1.0
+  L_Woofer_PEQ_04:
+    type: Biquad
+    description: L_Woofer PEQ placeholder 04. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 200
+      gain: 0.0
+      q: 1.0
+  L_Woofer_PEQ_05:
+    type: Biquad
+    description: L_Woofer PEQ placeholder 05. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 250
+      gain: 0.0
+      q: 1.0
+  L_Woofer_PEQ_06:
+    type: Biquad
+    description: L_Woofer PEQ placeholder 06. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 300
+      gain: 0.0
+      q: 1.0
+  L_Woofer_PEQ_07:
+    type: Biquad
+    description: L_Woofer PEQ placeholder 07. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 400
+      gain: 0.0
+      q: 1.0
+  L_Woofer_PEQ_08:
+    type: Biquad
+    description: L_Woofer PEQ placeholder 08. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 500
+      gain: 0.0
+      q: 1.0
+  L_Woofer_PEQ_09:
+    type: Biquad
+    description: L_Woofer PEQ placeholder 09. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 630
+      gain: 0.0
+      q: 1.0
+  L_Woofer_PEQ_10:
+    type: Biquad
+    description: L_Woofer PEQ placeholder 10. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 800
+      gain: 0.0
+      q: 1.0
+  L_Woofer_Output_Trim_minus_6dB:
+    type: Gain
+    description: L_Woofer output trim. Default -6 dB for safe first power-up.
+    parameters:
+      gain: -6.0
+      inverted: false
+      mute: false
+      scale: dB
+  L_Woofer_Delay_ms:
+    type: Delay
+    description: L_Woofer time alignment delay in milliseconds. Default 0 ms.
+    parameters:
+      delay: 0.0
+      unit: ms
+      subsample: false
+  L_Sub_PEQ_01:
+    type: Biquad
+    description: L_Sub PEQ placeholder 01. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 20
+      gain: 0.0
+      q: 1.0
+  L_Sub_PEQ_02:
+    type: Biquad
+    description: L_Sub PEQ placeholder 02. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 25
+      gain: 0.0
+      q: 1.0
+  L_Sub_PEQ_03:
+    type: Biquad
+    description: L_Sub PEQ placeholder 03. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 31.5
+      gain: 0.0
+      q: 1.0
+  L_Sub_PEQ_04:
+    type: Biquad
+    description: L_Sub PEQ placeholder 04. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 40
+      gain: 0.0
+      q: 1.0
+  L_Sub_PEQ_05:
+    type: Biquad
+    description: L_Sub PEQ placeholder 05. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 50
+      gain: 0.0
+      q: 1.0
+  L_Sub_PEQ_06:
+    type: Biquad
+    description: L_Sub PEQ placeholder 06. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 63
+      gain: 0.0
+      q: 1.0
+  L_Sub_PEQ_07:
+    type: Biquad
+    description: L_Sub PEQ placeholder 07. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 80
+      gain: 0.0
+      q: 1.0
+  L_Sub_PEQ_08:
+    type: Biquad
+    description: L_Sub PEQ placeholder 08. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 100
+      gain: 0.0
+      q: 1.0
+  L_Sub_PEQ_09:
+    type: Biquad
+    description: L_Sub PEQ placeholder 09. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 125
+      gain: 0.0
+      q: 1.0
+  L_Sub_PEQ_10:
+    type: Biquad
+    description: L_Sub PEQ placeholder 10. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 160
+      gain: 0.0
+      q: 1.0
+  L_Sub_Output_Trim_minus_6dB:
+    type: Gain
+    description: L_Sub output trim. Default -6 dB for safe first power-up.
+    parameters:
+      gain: -6.0
+      inverted: false
+      mute: false
+      scale: dB
+  L_Sub_Delay_ms:
+    type: Delay
+    description: L_Sub time alignment delay in milliseconds. Default 0 ms.
+    parameters:
+      delay: 0.0
+      unit: ms
+      subsample: false
+  R_Tweeter_PEQ_01:
+    type: Biquad
+    description: R_Tweeter PEQ placeholder 01. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 2500
+      gain: 0.0
+      q: 1.0
+  R_Tweeter_PEQ_02:
+    type: Biquad
+    description: R_Tweeter PEQ placeholder 02. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 3500
+      gain: 0.0
+      q: 1.0
+  R_Tweeter_PEQ_03:
+    type: Biquad
+    description: R_Tweeter PEQ placeholder 03. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 5000
+      gain: 0.0
+      q: 1.0
+  R_Tweeter_PEQ_04:
+    type: Biquad
+    description: R_Tweeter PEQ placeholder 04. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 7000
+      gain: 0.0
+      q: 1.0
+  R_Tweeter_PEQ_05:
+    type: Biquad
+    description: R_Tweeter PEQ placeholder 05. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 9000
+      gain: 0.0
+      q: 1.0
+  R_Tweeter_PEQ_06:
+    type: Biquad
+    description: R_Tweeter PEQ placeholder 06. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 11000
+      gain: 0.0
+      q: 1.0
+  R_Tweeter_PEQ_07:
+    type: Biquad
+    description: R_Tweeter PEQ placeholder 07. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 13000
+      gain: 0.0
+      q: 1.0
+  R_Tweeter_PEQ_08:
+    type: Biquad
+    description: R_Tweeter PEQ placeholder 08. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 15000
+      gain: 0.0
+      q: 1.0
+  R_Tweeter_PEQ_09:
+    type: Biquad
+    description: R_Tweeter PEQ placeholder 09. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 17000
+      gain: 0.0
+      q: 1.0
+  R_Tweeter_PEQ_10:
+    type: Biquad
+    description: R_Tweeter PEQ placeholder 10. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 19000
+      gain: 0.0
+      q: 1.0
+  R_Tweeter_Output_Trim_minus_6dB:
+    type: Gain
+    description: R_Tweeter output trim. Default -6 dB for safe first power-up.
+    parameters:
+      gain: -6.0
+      inverted: false
+      mute: false
+      scale: dB
+  R_Tweeter_Delay_ms:
+    type: Delay
+    description: R_Tweeter time alignment delay in milliseconds. Default 0 ms.
+    parameters:
+      delay: 0.0
+      unit: ms
+      subsample: false
+  R_Midrange_PEQ_01:
+    type: Biquad
+    description: R_Midrange PEQ placeholder 01. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 300
+      gain: 0.0
+      q: 1.0
+  R_Midrange_PEQ_02:
+    type: Biquad
+    description: R_Midrange PEQ placeholder 02. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 450
+      gain: 0.0
+      q: 1.0
+  R_Midrange_PEQ_03:
+    type: Biquad
+    description: R_Midrange PEQ placeholder 03. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 630
+      gain: 0.0
+      q: 1.0
+  R_Midrange_PEQ_04:
+    type: Biquad
+    description: R_Midrange PEQ placeholder 04. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 900
+      gain: 0.0
+      q: 1.0
+  R_Midrange_PEQ_05:
+    type: Biquad
+    description: R_Midrange PEQ placeholder 05. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 1200
+      gain: 0.0
+      q: 1.0
+  R_Midrange_PEQ_06:
+    type: Biquad
+    description: R_Midrange PEQ placeholder 06. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 1600
+      gain: 0.0
+      q: 1.0
+  R_Midrange_PEQ_07:
+    type: Biquad
+    description: R_Midrange PEQ placeholder 07. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 2000
+      gain: 0.0
+      q: 1.0
+  R_Midrange_PEQ_08:
+    type: Biquad
+    description: R_Midrange PEQ placeholder 08. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 2500
+      gain: 0.0
+      q: 1.0
+  R_Midrange_PEQ_09:
+    type: Biquad
+    description: R_Midrange PEQ placeholder 09. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 3150
+      gain: 0.0
+      q: 1.0
+  R_Midrange_PEQ_10:
+    type: Biquad
+    description: R_Midrange PEQ placeholder 10. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 4000
+      gain: 0.0
+      q: 1.0
+  R_Midrange_Output_Trim_minus_6dB:
+    type: Gain
+    description: R_Midrange output trim. Default -6 dB for safe first power-up.
+    parameters:
+      gain: -6.0
+      inverted: false
+      mute: false
+      scale: dB
+  R_Midrange_Delay_ms:
+    type: Delay
+    description: R_Midrange time alignment delay in milliseconds. Default 0 ms.
+    parameters:
+      delay: 0.0
+      unit: ms
+      subsample: false
+  R_Woofer_PEQ_01:
+    type: Biquad
+    description: R_Woofer PEQ placeholder 01. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 80
+      gain: 0.0
+      q: 1.0
+  R_Woofer_PEQ_02:
+    type: Biquad
+    description: R_Woofer PEQ placeholder 02. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 110
+      gain: 0.0
+      q: 1.0
+  R_Woofer_PEQ_03:
+    type: Biquad
+    description: R_Woofer PEQ placeholder 03. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 150
+      gain: 0.0
+      q: 1.0
+  R_Woofer_PEQ_04:
+    type: Biquad
+    description: R_Woofer PEQ placeholder 04. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 200
+      gain: 0.0
+      q: 1.0
+  R_Woofer_PEQ_05:
+    type: Biquad
+    description: R_Woofer PEQ placeholder 05. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 250
+      gain: 0.0
+      q: 1.0
+  R_Woofer_PEQ_06:
+    type: Biquad
+    description: R_Woofer PEQ placeholder 06. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 300
+      gain: 0.0
+      q: 1.0
+  R_Woofer_PEQ_07:
+    type: Biquad
+    description: R_Woofer PEQ placeholder 07. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 400
+      gain: 0.0
+      q: 1.0
+  R_Woofer_PEQ_08:
+    type: Biquad
+    description: R_Woofer PEQ placeholder 08. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 500
+      gain: 0.0
+      q: 1.0
+  R_Woofer_PEQ_09:
+    type: Biquad
+    description: R_Woofer PEQ placeholder 09. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 630
+      gain: 0.0
+      q: 1.0
+  R_Woofer_PEQ_10:
+    type: Biquad
+    description: R_Woofer PEQ placeholder 10. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 800
+      gain: 0.0
+      q: 1.0
+  R_Woofer_Output_Trim_minus_6dB:
+    type: Gain
+    description: R_Woofer output trim. Default -6 dB for safe first power-up.
+    parameters:
+      gain: -6.0
+      inverted: false
+      mute: false
+      scale: dB
+  R_Woofer_Delay_ms:
+    type: Delay
+    description: R_Woofer time alignment delay in milliseconds. Default 0 ms.
+    parameters:
+      delay: 0.0
+      unit: ms
+      subsample: false
+  R_Sub_PEQ_01:
+    type: Biquad
+    description: R_Sub PEQ placeholder 01. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 20
+      gain: 0.0
+      q: 1.0
+  R_Sub_PEQ_02:
+    type: Biquad
+    description: R_Sub PEQ placeholder 02. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 25
+      gain: 0.0
+      q: 1.0
+  R_Sub_PEQ_03:
+    type: Biquad
+    description: R_Sub PEQ placeholder 03. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 31.5
+      gain: 0.0
+      q: 1.0
+  R_Sub_PEQ_04:
+    type: Biquad
+    description: R_Sub PEQ placeholder 04. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 40
+      gain: 0.0
+      q: 1.0
+  R_Sub_PEQ_05:
+    type: Biquad
+    description: R_Sub PEQ placeholder 05. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 50
+      gain: 0.0
+      q: 1.0
+  R_Sub_PEQ_06:
+    type: Biquad
+    description: R_Sub PEQ placeholder 06. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 63
+      gain: 0.0
+      q: 1.0
+  R_Sub_PEQ_07:
+    type: Biquad
+    description: R_Sub PEQ placeholder 07. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 80
+      gain: 0.0
+      q: 1.0
+  R_Sub_PEQ_08:
+    type: Biquad
+    description: R_Sub PEQ placeholder 08. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 100
+      gain: 0.0
+      q: 1.0
+  R_Sub_PEQ_09:
+    type: Biquad
+    description: R_Sub PEQ placeholder 09. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 125
+      gain: 0.0
+      q: 1.0
+  R_Sub_PEQ_10:
+    type: Biquad
+    description: R_Sub PEQ placeholder 10. Gain 0 dB means bypass/flat.
+    parameters:
+      type: Peaking
+      freq: 160
+      gain: 0.0
+      q: 1.0
+  R_Sub_Output_Trim_minus_6dB:
+    type: Gain
+    description: R_Sub output trim. Default -6 dB for safe first power-up.
+    parameters:
+      gain: -6.0
+      inverted: false
+      mute: false
+      scale: dB
+  R_Sub_Delay_ms:
+    type: Delay
+    description: R_Sub time alignment delay in milliseconds. Default 0 ms.
+    parameters:
+      delay: 0.0
+      unit: ms
+      subsample: false
+pipeline:
+- type: Mixer
+  name: usb_stereo_to_stereo_3way_dual_subs_8xout
+- type: Filter
+  channels:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  names:
+  - Master_Safety_Gain_minus_12dB
+- type: Filter
+  channels:
+  - 3
+  - 7
+  names:
+  - Sub_Lowpass_80Hz_LR24
+- type: Filter
+  channels:
+  - 2
+  - 6
+  names:
+  - Woofer_Highpass_80Hz_LR24
+  - Woofer_Lowpass_300Hz_LR24
+- type: Filter
+  channels:
+  - 1
+  - 5
+  names:
+  - Midrange_Highpass_300Hz_LR24
+  - Midrange_Lowpass_2500Hz_LR24
+- type: Filter
+  channels:
+  - 0
+  - 4
+  names:
+  - Tweeter_Highpass_2500Hz_LR24
+- type: Filter
+  channels:
+  - 0
+  names:
+  - L_Tweeter_PEQ_01
+  - L_Tweeter_PEQ_02
+  - L_Tweeter_PEQ_03
+  - L_Tweeter_PEQ_04
+  - L_Tweeter_PEQ_05
+  - L_Tweeter_PEQ_06
+  - L_Tweeter_PEQ_07
+  - L_Tweeter_PEQ_08
+  - L_Tweeter_PEQ_09
+  - L_Tweeter_PEQ_10
+  - L_Tweeter_Output_Trim_minus_6dB
+  - L_Tweeter_Delay_ms
+- type: Filter
+  channels:
+  - 1
+  names:
+  - L_Midrange_PEQ_01
+  - L_Midrange_PEQ_02
+  - L_Midrange_PEQ_03
+  - L_Midrange_PEQ_04
+  - L_Midrange_PEQ_05
+  - L_Midrange_PEQ_06
+  - L_Midrange_PEQ_07
+  - L_Midrange_PEQ_08
+  - L_Midrange_PEQ_09
+  - L_Midrange_PEQ_10
+  - L_Midrange_Output_Trim_minus_6dB
+  - L_Midrange_Delay_ms
+- type: Filter
+  channels:
+  - 2
+  names:
+  - L_Woofer_PEQ_01
+  - L_Woofer_PEQ_02
+  - L_Woofer_PEQ_03
+  - L_Woofer_PEQ_04
+  - L_Woofer_PEQ_05
+  - L_Woofer_PEQ_06
+  - L_Woofer_PEQ_07
+  - L_Woofer_PEQ_08
+  - L_Woofer_PEQ_09
+  - L_Woofer_PEQ_10
+  - L_Woofer_Output_Trim_minus_6dB
+  - L_Woofer_Delay_ms
+- type: Filter
+  channels:
+  - 3
+  names:
+  - L_Sub_PEQ_01
+  - L_Sub_PEQ_02
+  - L_Sub_PEQ_03
+  - L_Sub_PEQ_04
+  - L_Sub_PEQ_05
+  - L_Sub_PEQ_06
+  - L_Sub_PEQ_07
+  - L_Sub_PEQ_08
+  - L_Sub_PEQ_09
+  - L_Sub_PEQ_10
+  - L_Sub_Output_Trim_minus_6dB
+  - L_Sub_Delay_ms
+- type: Filter
+  channels:
+  - 4
+  names:
+  - R_Tweeter_PEQ_01
+  - R_Tweeter_PEQ_02
+  - R_Tweeter_PEQ_03
+  - R_Tweeter_PEQ_04
+  - R_Tweeter_PEQ_05
+  - R_Tweeter_PEQ_06
+  - R_Tweeter_PEQ_07
+  - R_Tweeter_PEQ_08
+  - R_Tweeter_PEQ_09
+  - R_Tweeter_PEQ_10
+  - R_Tweeter_Output_Trim_minus_6dB
+  - R_Tweeter_Delay_ms
+- type: Filter
+  channels:
+  - 5
+  names:
+  - R_Midrange_PEQ_01
+  - R_Midrange_PEQ_02
+  - R_Midrange_PEQ_03
+  - R_Midrange_PEQ_04
+  - R_Midrange_PEQ_05
+  - R_Midrange_PEQ_06
+  - R_Midrange_PEQ_07
+  - R_Midrange_PEQ_08
+  - R_Midrange_PEQ_09
+  - R_Midrange_PEQ_10
+  - R_Midrange_Output_Trim_minus_6dB
+  - R_Midrange_Delay_ms
+- type: Filter
+  channels:
+  - 6
+  names:
+  - R_Woofer_PEQ_01
+  - R_Woofer_PEQ_02
+  - R_Woofer_PEQ_03
+  - R_Woofer_PEQ_04
+  - R_Woofer_PEQ_05
+  - R_Woofer_PEQ_06
+  - R_Woofer_PEQ_07
+  - R_Woofer_PEQ_08
+  - R_Woofer_PEQ_09
+  - R_Woofer_PEQ_10
+  - R_Woofer_Output_Trim_minus_6dB
+  - R_Woofer_Delay_ms
+- type: Filter
+  channels:
+  - 7
+  names:
+  - R_Sub_PEQ_01
+  - R_Sub_PEQ_02
+  - R_Sub_PEQ_03
+  - R_Sub_PEQ_04
+  - R_Sub_PEQ_05
+  - R_Sub_PEQ_06
+  - R_Sub_PEQ_07
+  - R_Sub_PEQ_08
+  - R_Sub_PEQ_09
+  - R_Sub_PEQ_10
+  - R_Sub_Output_Trim_minus_6dB
+  - R_Sub_Delay_ms

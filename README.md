@@ -22,12 +22,21 @@ Use it when the music comes from a computer and you want the Raspberry Pi to do
 the DSP work before the amplifiers: crossover filters, PEQ bands, gain trims,
 channel routing, delay, and time/phase alignment.
 
-The default setup is simple passthrough:
+The installer starts with simple passthrough so you can prove the hardware
+first:
 
 - USB input from the computer: 8 channels / 7.1 / 48 kHz
 - CamillaDSP processing on the Raspberry Pi 5
 - RASPIAUDIO 8xOUT analog output: 8 channels
 - Default mapping: USB channel 1 to OUT1, channel 2 to OUT2, up to channel 8 to OUT8
+
+The main CamillaDSP use case is the open miniDSP-style active crossover preset:
+
+- USB stereo input: 2 channels / 48 kHz
+- Stereo 3-way + dual subs routing
+- Linkwitz-Riley 24 dB/oct crossovers
+- 10 PEQ placeholders, gain trim, and delay per output
+- Safe startup attenuation: master `-12 dB`, output trims `-6 dB`
 
 ## Raspberry Pi 5 only
 
@@ -104,9 +113,39 @@ then add crossover, PEQ, gain, delay, and other CamillaDSP processing.
 
 ![CamillaDSP 8-channel mixer mapping](docs/assets/camilladsp-usb-7-1-mixer.png)
 
+## Active crossover preset
+
+For an open miniDSP-style box, start from:
+
+```text
+configs/stereo_3way_dual_subs_48k_8xout.yml
+```
+
+After running the installer, the same preset is also available on the
+Raspberry Pi as:
+
+```text
+/etc/camilladsp/stereo_3way_dual_subs_48k_8xout.yml
+```
+
+![Stereo 3-way active crossover routing](docs/assets/stereo-3way-active-crossover-8xout.png)
+
+It maps USB stereo input to:
+
+```text
+OUT1 Left tweeter   OUT5 Right tweeter
+OUT2 Left midrange  OUT6 Right midrange
+OUT3 Left woofer    OUT7 Right woofer
+OUT4 Left sub       OUT8 Right sub
+```
+
+Read the preset guide before connecting amplifiers and tweeters:
+[profiles/stereo_3way_active_crossover_8xout/README.md](profiles/stereo_3way_active_crossover_8xout/README.md)
+
 ## More details
 
 - Beginner guide: [profiles/raspiaudio_8xout_usb_7_1_quickstart/README.md](profiles/raspiaudio_8xout_usb_7_1_quickstart/README.md)
+- Active crossover preset: [profiles/stereo_3way_active_crossover_8xout/README.md](profiles/stereo_3way_active_crossover_8xout/README.md)
 - USB gadget details: [docs/usb_audio_gadget_pi5.md](docs/usb_audio_gadget_pi5.md)
 - 2-channel USB input example: [docs/usb_gadget_2ch_to_8xout.md](docs/usb_gadget_2ch_to_8xout.md)
 - 8-channel USB input example: [docs/usb_gadget_8ch_to_8xout.md](docs/usb_gadget_8ch_to_8xout.md)
