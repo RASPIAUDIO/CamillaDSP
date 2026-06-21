@@ -27,13 +27,13 @@ typedef struct {
 static void usage(const char *argv0)
 {
     fprintf(stderr,
-            "Usage: %s [--gpio 21] [--rate 48000] [--tone 1000] [--seconds 10] [--amplitude-dbfs -12] [--chunk-frames 2048]\n",
+            "Usage: %s [--gpio 12] [--rate 48000] [--tone 1000] [--seconds 10] [--amplitude-dbfs -12] [--chunk-frames 2048]\n",
             argv0);
 }
 
 static int parse_options(int argc, char **argv, options_t *options)
 {
-    options->gpio = 21;
+    options->gpio = 12;
     options->rate = 48000;
     options->tone = 1000.0;
     options->seconds = 10.0;

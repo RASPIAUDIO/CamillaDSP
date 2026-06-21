@@ -36,10 +36,19 @@ The included `spdif_pi5_pio_tx` does exactly this experimentally:
 
 - PIO program: one instruction, `out pins, 1`.
 - Data format: packed 32-bit words, MSB first.
-- Default output: GPIO21, physical pin 40.
+- Default output: GPIO12, physical pin 32.
 - Default audio: 48 kHz stereo, 1 kHz sine, -12 dBFS.
 
 Risk: continuous lock depends on PIOLib/DMA feeding the FIFO without gaps. If there are underruns between buffer transfers, a receiver may unlock or click. A kernel driver is the cleaner product path.
+
+On the RASPIAUDIO 8xOUT / 8xIN+8xOUT setup, do not use GPIO18-GPIO27 for this prototype. The Pi 5 `hifiberry-dac8x` overlay uses those pins for I2S0:
+
+- GPIO18: I2S0_SCLK
+- GPIO19: I2S0_WS
+- GPIO20, 22, 24, 26: I2S0 input lanes
+- GPIO21, 23, 25, 27: I2S0 output lanes
+
+GPIO21 was used by the original Pi 1-4 `raspdif`, but on this Pi 5 audio setup it is already `I2S0_SDO0`. GPIO12 is the safer default lab pin because it is not claimed by the active 8xOUT overlay.
 
 ### Option B: userspace low-level daemon
 
@@ -126,7 +135,7 @@ Raw GPIO is only for lab validation. Start with a short cable and low-risk recei
 
 ```bash
 cd ~/CamillaDSP/prototypes/pi5_spdif_gpio
-./scripts/test_1khz_lock.sh 21
+./scripts/test_1khz_lock.sh
 ```
 
 The receiver/DAC should report lock as PCM 48 kHz and play a 1 kHz sine. If it does not lock:
@@ -134,17 +143,17 @@ The receiver/DAC should report lock as PCM 48 kHz and play a 1 kHz sine. If it d
 ```bash
 ls -l /dev/pio0
 sudo dmesg | grep -i -E 'rp1|pio'
-LD_LIBRARY_PATH=build/piolib ./build/spdif_pi5_pio_tx --gpio 21 --rate 48000 --tone 1000 --seconds 3
+LD_LIBRARY_PATH=third_party/piolib-build ./build/spdif_pi5_pio_tx --gpio 12 --rate 48000 --tone 1000 --seconds 3
 ```
 
-With a scope or logic analyser, GPIO21 should show a 6.144 Mbit/s BMC waveform for 48 kHz.
+With a scope or logic analyser, GPIO12 should show a 6.144 Mbit/s BMC waveform for 48 kHz.
 
 ## Wiring
 
 Prototype raw GPIO test:
 
-- GPIO21, physical pin 40: S/PDIF-like signal.
-- GND, for example physical pin 39: ground reference.
+- GPIO12, physical pin 32: S/PDIF-like signal.
+- GND, for example physical pin 34: ground reference.
 - Do not connect raw GPIO to unknown equipment for product testing.
 
 Coax final output should be designed as a proper 75 ohm S/PDIF electrical output, around 0.5 Vpp into 75 ohm, normally with AC coupling and/or pulse transformer/buffering. A simple resistor divider may be acceptable for a bench proof, but it is not a final product output stage.
@@ -170,10 +179,11 @@ Proven in this repo:
 - Pi 5 public RP1/PIOLib path was identified.
 - A standalone S/PDIF/BMC 48 kHz encoder is included.
 - A Pi 5 RP1/PIO transmitter skeleton is included and buildable with PIOLib.
+- On a live Pi 5 with `hifiberry-dac8x`, GPIO18-GPIO27 are occupied by the 8xOUT/8xIN+8xOUT I2S path, so GPIO12 is now the default test pin.
 
 Still to prove on hardware:
 
-- Real receiver lock on GPIO21.
+- Real receiver lock on GPIO12.
 - Long-duration lock without underruns.
 - 44.1 kHz and 96 kHz behavior.
 - Jitter and eye pattern.

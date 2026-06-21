@@ -3,8 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-PIOLIB_BUILD="$PROJECT_DIR/build/piolib"
-GPIO="${1:-21}"
+PIOLIB_BUILD="$PROJECT_DIR/third_party/piolib-build"
+GPIO="${1:-12}"
 
 if [ ! -e /dev/pio0 ]; then
   echo "Missing /dev/pio0. This test requires Raspberry Pi 5 RP1 PIO support." >&2
