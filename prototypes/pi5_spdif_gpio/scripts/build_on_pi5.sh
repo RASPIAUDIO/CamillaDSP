@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 UTILS_DIR="$PROJECT_DIR/third_party/raspberrypi-utils"
-PIOLIB_BUILD="$PROJECT_DIR/build/piolib"
+PIOLIB_BUILD="$PROJECT_DIR/third_party/piolib-build"
 
 sudo apt update
 sudo apt install -y build-essential cmake git
