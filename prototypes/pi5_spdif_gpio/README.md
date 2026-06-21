@@ -107,6 +107,19 @@ Expected size for 48 kHz, one second:
 48000 stereo frames * 128 half-bits / 8 = 768000 bytes
 ```
 
+For a quick local sanity check of the encoder, scripts, and optional PIOLib build:
+
+```bash
+cd ~/CamillaDSP/prototypes/pi5_spdif_gpio
+./scripts/verify_local.sh
+```
+
+If PIOLib is in a custom location, pass it explicitly:
+
+```bash
+PIOLIB_INC=/path/to/piolib/include PIOLIB_LIB=/path/to/piolib/build ./scripts/verify_local.sh
+```
+
 ## GPIO lock test
 
 Raw GPIO is only for lab validation. Start with a short cable and low-risk receiver.
