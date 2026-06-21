@@ -11,6 +11,8 @@ PRODUCT_ID="${PRODUCT_ID:-0x0108}"
 PRODUCT_SUFFIX="${PRODUCT_SUFFIX:-7_1_48k}"
 REBOOT_NOW="${REBOOT_NOW:-ask}"
 OUTPUT_DEVICE="${OUTPUT_DEVICE:-}"
+AUDIO_OVERLAY="${AUDIO_OVERLAY:-hifiberry-dac8x}"
+RASPIAUDIO_AUDIO_DEVICE="${RASPIAUDIO_AUDIO_DEVICE:-hw:CARD=sndrpihifiberry,DEV=0}"
 BOOT_CONFIG="${BOOT_CONFIG:-/boot/firmware/config.txt}"
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -72,11 +74,12 @@ configure_boot() {
   fi
 
   backup_file "$BOOT_CONFIG"
-  python3 - "$BOOT_CONFIG" <<'PY'
+  python3 - "$BOOT_CONFIG" "$AUDIO_OVERLAY" <<'PY'
 from pathlib import Path
 import sys
 
 p = Path(sys.argv[1])
+audio_overlay = sys.argv[2]
 lines = p.read_text().splitlines()
 out = []
 inserted = False
@@ -88,18 +91,28 @@ for line in lines:
         out.append("#" + line + " # disabled for USB Audio gadget device mode")
         continue
 
+    if stripped.startswith("dtoverlay=xmos-device"):
+        out.append("#" + line + " # disabled for RASPIAUDIO 8xOUT Pi 5 audio")
+        continue
+
     if stripped.startswith("dtoverlay=dwc2") or stripped.startswith("#dtoverlay=dwc2"):
         out.append("#" + line.lstrip("#") + " # disabled duplicate/stale by RASPIAUDIO installer")
+        continue
+
+    if stripped.startswith(f"dtoverlay={audio_overlay}"):
+        out.append("#" + line + " # disabled duplicate/stale by RASPIAUDIO installer")
         continue
 
     out.append(line)
     if stripped == "[all]" and not inserted:
         out.append("dtoverlay=dwc2,dr_mode=peripheral # RASPIAUDIO USB Audio 7.1 gadget")
+        out.append(f"dtoverlay={audio_overlay} # RASPIAUDIO 8xOUT / 8xIN+8xOUT Pi 5 audio")
         inserted = True
 
 if not inserted:
     out.append("[all]")
     out.append("dtoverlay=dwc2,dr_mode=peripheral # RASPIAUDIO USB Audio 7.1 gadget")
+    out.append(f"dtoverlay={audio_overlay} # RASPIAUDIO 8xOUT / 8xIN+8xOUT Pi 5 audio")
 
 p.write_text("\n".join(out) + "\n")
 PY
@@ -153,6 +166,11 @@ install_camilladsp() {
 detect_output_device() {
   if [ -n "$OUTPUT_DEVICE" ]; then
     echo "$OUTPUT_DEVICE"
+    return 0
+  fi
+
+  if [ "$AUDIO_OVERLAY" = "hifiberry-dac8x" ]; then
+    echo "$RASPIAUDIO_AUDIO_DEVICE"
     return 0
   fi
 
