@@ -179,6 +179,16 @@ Still to prove on hardware:
 - Jitter and eye pattern.
 - Correct final coax/TOSLINK electrical stage.
 
+## Prior art and next references
+
+No public project was found that is already a finished `raspdif` equivalent for Raspberry Pi 5 bare GPIO S/PDIF output. The closest useful references are:
+
+- `pico_audio_spdif`: Raspberry Pi's Pico example for S/PDIF output via PIO. It is not Pi 5 code, but it is the best reference for a cleaner PIO program, DMA feeding, 192-frame S/PDIF blocks, X/Y/Z preambles, and channel-status handling.
+- `zynaudiox8`: a Raspberry Pi 5 project with a device-tree overlay, 8-channel I2S audio, and a kernel driver with S/PDIF duplex support. It is not a bare-GPIO `raspdif` port, but it is useful prior art for a future ALSA/kernel-driver implementation on Pi 5.
+- Raspberry Pi forum discussion: a Raspberry Pi engineer notes that `raspdif` relies on old low-level mechanisms such as `/dev/mem`, mailbox calls, and `bcm_host_get_sdram_address()`, so it is very unlikely to work unchanged on Pi 5. The same comment points out that a clean kernel driver is plausible, and that ALSA already has IEC958 encapsulation support.
+
+These references reinforce the current roadmap: first prove a fixed 48 kHz stereo sine on RP1 PIO, then move to a continuous buffered implementation, and only then consider ALSA/kernel integration.
+
 ## Sources
 
 - `raspdif`: https://github.com/mill1000/raspdif
@@ -186,3 +196,6 @@ Still to prove on hardware:
 - Raspberry Pi PIOLib announcement: https://www.raspberrypi.com/news/piolib-a-userspace-library-for-pio-control/
 - Raspberry Pi PIOLib source: https://github.com/raspberrypi/utils/tree/master/piolib
 - Kernel ALSA/I2S reference idea: https://github.com/kiffie/rpi-i2s-spdif
+- Pico S/PDIF via PIO reference: https://github.com/raspberrypi/pico-extras/tree/master/src/rp2_common/pico_audio_spdif
+- Raspberry Pi 5 I2S/S/PDIF driver reference: https://github.com/riban-bw/zynaudiox8
+- Raspberry Pi forum Pi 5 S/PDIF discussion: https://forums.raspberrypi.com/viewtopic.php?t=390954
