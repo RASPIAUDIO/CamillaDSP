@@ -39,11 +39,11 @@ The included `spdif_pi5_pio_tx` does exactly this experimentally:
 - Default output: GPIO12, physical pin 32.
 - Default audio: 48 kHz stereo, 1 kHz sine or 120 Hz -> 6 kHz sweep, -18 dBFS, 2 seconds.
 
-Risk: continuous lock depends on PIOLib/DMA feeding the FIFO without gaps. Early chunked tests produced an audible chopped "helicopter" noise on optical output, which is consistent with inter-chunk underruns. The default lock tests now precompute a short 2 second signal and send it as one DMA transfer. Longer one-shot transfers can hit the current PIOLib timeout. A kernel driver or circular DMA path is still the cleaner product path for continuous audio.
+Risk: continuous lock depends on PIOLib/DMA feeding the FIFO without gaps. Early chunked tests produced an audible chopped "helicopter" noise on optical output, which is consistent with inter-chunk underruns. The playback prototype now pre-encodes the finite tone/sweep/WAV stream and submits it as one PIOLib transfer, while PIOLib splits that transfer into smaller DMA bounce buffers internally. A kernel driver or circular DMA path is still the cleaner product path for endless audio.
 
-The WAV playback path uses PIOLib's multi-buffer DMA queue with about 0.5 second per buffer. This is the best userspace prototype path found so far. It is not yet a real ALSA circular-DMA driver, but it keeps several DMA buffers queued so a full WAV file can be streamed instead of being limited to a short one-shot transfer. On the tested Pi 5, the RP1 PIO clock must be treated as 200 MHz; using 100 MHz makes S/PDIF play at exactly double speed.
+The WAV playback path uses one userspace PIOLib transfer with about 0.5 second per internal DMA bounce buffer by default. This avoids a user/kernel handoff every 0.5 second, which caused visible TOSLINK LED drops during earlier tests. It is not yet a real ALSA circular-DMA driver: memory use scales with file length at about 16 bytes per stereo PCM frame, so a 30 second 44.1 kHz WAV needs about 21 MB of encoded buffer. On the tested Pi 5, the RP1 PIO clock must be treated as 200 MHz; using 100 MHz makes S/PDIF play at exactly double speed.
 
-The buffering strategy is inspired by DSPi's S/PDIF output model on RP2040/RP2350: audio blocks are prepared ahead of time, the PIO output is fed by DMA, and the firmware exposes diagnostics such as consumer-buffer fill and DMA starvation counters. On Raspberry Pi 5, PIOLib does not currently expose the same bare-metal circular-DMA control from userspace, so this prototype uses the closest reversible approach: a configurable PIOLib DMA queue plus transfer timing warnings. A product-grade version should move this into an ALSA/kernel driver or an external I2S-to-S/PDIF transmitter.
+The buffering strategy is inspired by DSPi's S/PDIF output model on RP2040/RP2350: audio blocks are prepared ahead of time, the PIO output is fed by DMA, and the firmware exposes diagnostics such as consumer-buffer fill and DMA starvation counters. On Raspberry Pi 5, PIOLib does not currently expose the same bare-metal circular-DMA control from userspace, so this prototype uses the closest reversible approach: one finite transfer plus configurable PIOLib DMA bounce buffers. A product-grade version should move this into an ALSA/kernel driver or an external I2S-to-S/PDIF transmitter.
 
 On the RASPIAUDIO 8xOUT / 8xIN+8xOUT setup, do not use GPIO18-GPIO27 for this prototype. The Pi 5 `hifiberry-dac8x` overlay uses those pins for I2S0:
 
@@ -161,13 +161,13 @@ cd ~/CamillaDSP/prototypes/pi5_spdif_gpio
 ./scripts/play_wav.sh /path/to/file.wav
 ```
 
-The WAV helper defaults to GPIO12, four PIOLib DMA buffers, 200 MHz RP1 PIO clock, and about 0.5 second per buffer. The process intentionally waits for the full audio duration before stopping PIO, because PIOLib may accept queued data faster than the physical S/PDIF stream drains. For experiments:
+The WAV helper defaults to GPIO12, four PIOLib DMA buffers, 200 MHz RP1 PIO clock, and about 0.5 second per internal DMA bounce buffer. The WAV is encoded up front and submitted as one contiguous PIOLib transfer, which avoids an audible/visible dropout at every userspace chunk boundary. For experiments:
 
 ```bash
 SPDIF_DMA_BUFFERS=8 SPDIF_CHUNK_FRAMES=24000 ./scripts/play_wav.sh /path/to/file.wav
 ```
 
-If the program prints slow transfer warnings or the receiver loses lock, increase `SPDIF_DMA_BUFFERS` or `SPDIF_CHUNK_FRAMES`. If 44.1 kHz does not lock on a given receiver, convert the WAV to 48 kHz PCM s16le and test again before blaming the GPIO stage.
+`SPDIF_CHUNK_FRAMES` controls the internal DMA bounce-buffer size, not an application-level playback chunk. Keep it below roughly one second of audio so the current PIOLib userspace driver can recycle DMA buffers without hitting its timeout. If 44.1 kHz does not lock on a given receiver, convert the WAV to 48 kHz PCM s16le and test again before blaming the GPIO stage.
 
 ## Wiring
 

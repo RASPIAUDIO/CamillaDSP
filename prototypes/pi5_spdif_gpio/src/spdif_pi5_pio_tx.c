@@ -3,6 +3,7 @@
 #include "spdif_bmc.h"
 
 #include <errno.h>
+#include <limits.h>
 #include <math.h>
 #include <signal.h>
 #include <stdio.h>
@@ -174,10 +175,9 @@ static void usage(const char *argv0)
 {
     fprintf(stderr,
             "Usage: %s [--gpio 12] [--rate 48000] [--pio-clock-hz 200000000] [--mode tone|sweep|wav] [--input file.wav] [--tone 1000] [--sweep-start 120] [--sweep-end 6000] [--seconds 2] [--amplitude-dbfs -18] [--chunk-frames 0] [--dma-buffers 4]\n"
-            "  --chunk-frames 0 precomputes the full test tone and sends it as one DMA transfer.\n"
-            "  For --mode wav, --chunk-frames 0 means roughly 0.5 second chunks fed into the PIOLib DMA queue.\n"
-            "  --dma-buffers N sets the PIOLib DMA queue depth for streaming modes; default is 4.\n"
-            "  Keep one-shot tests short; transfers above about 2 seconds can hit the current PIOLib timeout.\n",
+            "  The full finite stream is encoded first and submitted as one PIOLib transfer.\n"
+            "  --chunk-frames 0 means roughly 0.5 second DMA bounce buffers inside that transfer.\n"
+            "  --dma-buffers N sets the PIOLib DMA queue depth; default is 4.\n",
             argv0);
 }
 
@@ -289,20 +289,47 @@ int main(int argc, char **argv)
     }
 
     uint32_t total_frames = wav_mode ? wav_info.total_frames : (uint32_t)(options.seconds * (double)options.rate + 0.5);
-    int one_shot_mode = !wav_mode && options.chunk_frames == 0;
-    uint32_t effective_chunk_frames = one_shot_mode ? total_frames : options.chunk_frames;
-    if (effective_chunk_frames == 0) {
-        effective_chunk_frames = options.rate / 2u;
-        if (effective_chunk_frames == 0) {
-            effective_chunk_frames = options.rate;
+    if (total_frames == 0) {
+        fprintf(stderr, "nothing to play\n");
+        if (wav_file) {
+            fclose(wav_file);
+        }
+        return 1;
+    }
+
+    uint32_t dma_buffer_frames = options.chunk_frames;
+    if (dma_buffer_frames == 0) {
+        dma_buffer_frames = options.rate / 2u;
+        if (dma_buffer_frames == 0) {
+            dma_buffer_frames = options.rate;
         }
     }
 
-    size_t chunk_words = spdif_packed_word_count_for_frames(effective_chunk_frames);
-    size_t chunk_bytes = chunk_words * sizeof(uint32_t);
-    uint32_t *chunk = calloc(chunk_words, sizeof(uint32_t));
-    if (!chunk) {
-        fprintf(stderr, "allocation failed for %zu bytes\n", chunk_bytes);
+    size_t dma_buffer_words = spdif_packed_word_count_for_frames(dma_buffer_frames);
+    size_t dma_buffer_bytes = dma_buffer_words * sizeof(uint32_t);
+    if (dma_buffer_bytes == 0 || dma_buffer_bytes > UINT_MAX) {
+        fprintf(stderr, "invalid DMA buffer size: %zu bytes\n", dma_buffer_bytes);
+        if (wav_file) {
+            fclose(wav_file);
+        }
+        return 1;
+    }
+
+    size_t transfer_word_capacity = spdif_packed_word_count_for_frames(total_frames);
+    size_t transfer_capacity_bytes = transfer_word_capacity * sizeof(uint32_t);
+    if (transfer_capacity_bytes == 0 || transfer_capacity_bytes > UINT_MAX) {
+        fprintf(stderr,
+                "encoded transfer would be %zu bytes; split the file or build a kernel/cyclic-DMA path for this length\n",
+                transfer_capacity_bytes);
+        if (wav_file) {
+            fclose(wav_file);
+        }
+        return 1;
+    }
+
+    uint32_t *transfer_words = calloc(transfer_word_capacity, sizeof(uint32_t));
+    if (!transfer_words) {
+        fprintf(stderr, "allocation failed for %zu bytes\n", transfer_capacity_bytes);
         if (wav_file) {
             fclose(wav_file);
         }
@@ -311,73 +338,50 @@ int main(int argc, char **argv)
 
     int16_t *pcm_chunk = NULL;
     if (wav_mode) {
-        pcm_chunk = calloc((size_t)effective_chunk_frames * 2u, sizeof(int16_t));
+        pcm_chunk = calloc((size_t)dma_buffer_frames * 2u, sizeof(int16_t));
         if (!pcm_chunk) {
             fprintf(stderr, "allocation failed for PCM chunk\n");
-            free(chunk);
+            free(transfer_words);
             fclose(wav_file);
             return 1;
         }
     }
 
-    PIO pio = pio0;
-    if (PIO_IS_ERR(pio)) {
-        fprintf(stderr, "cannot open pio0; check /dev/pio0, kernel, EEPROM, and gpio group permissions\n");
-        free(pcm_chunk);
-        free(chunk);
-        if (wav_file) {
-            fclose(wav_file);
-        }
-        return 1;
-    }
-
-    int sm = pio_claim_unused_sm(pio, true);
-    uint offset = pio_add_program(pio, &spdif_tx_program);
-    pio_sm_config_xfer(pio, (uint)sm, PIO_DIR_TO_SM, (uint)chunk_bytes, options.dma_buffers);
-    pio_sm_clear_fifos(pio, (uint)sm);
-    spdif_tx_program_init(pio, (uint)sm, offset, options.gpio, (float)spdif_halfbit_rate(options.rate), options.pio_clock_hz);
-
     printf("Pi 5 RP1/PIO S/PDIF experimental TX\n");
-    printf("GPIO %u, PCM %u Hz, S/PDIF half-bit clock %u Hz, PIO clock %u Hz, mode %s, chunk %u frames/%zu bytes, DMA buffers %u\n",
+    printf("GPIO %u, PCM %u Hz, S/PDIF half-bit clock %u Hz, PIO clock %u Hz, mode %s\n",
            options.gpio,
            options.rate,
            spdif_halfbit_rate(options.rate),
            options.pio_clock_hz,
-           options.mode,
-           effective_chunk_frames,
-           chunk_bytes,
-           options.dma_buffers);
+           options.mode);
+    printf("DMA bounce buffer %u frames/%zu bytes, queued buffers %u, full transfer %u frames/%zu bytes\n",
+           dma_buffer_frames,
+           dma_buffer_bytes,
+           options.dma_buffers,
+           total_frames,
+           transfer_capacity_bytes);
     if (wav_mode) {
         printf("WAV input %s, %u frames, %.2f seconds\n",
                options.input_path,
                total_frames,
                (double)total_frames / (double)options.rate);
     }
-    if (one_shot_mode) {
-        printf("Using one-shot DMA test mode to avoid inter-chunk underruns.\n");
-    } else {
-        printf("Using queued PIOLib DMA streaming mode.\n");
-    }
-    printf("Output is raw GPIO for lab testing only. Stop with Ctrl+C.\n");
+    printf("Pre-encoding finite stream into one PIOLib transfer to avoid inter-block FIFO underruns.\n");
 
     spdif_bmc_state_t state;
     spdif_bmc_state_init(&state, options.rate);
 
-    uint32_t frames_sent = 0;
-    uint32_t chunks_sent = 0;
-    uint32_t slow_xfers = 0;
-    double max_xfer_seconds = 0.0;
-    double total_xfer_seconds = 0.0;
-    double stream_start = monotonic_seconds();
-
-    while (keep_running && frames_sent < total_frames) {
-        uint32_t frames_this_chunk = effective_chunk_frames;
-        if (total_frames - frames_sent < frames_this_chunk) {
-            frames_this_chunk = total_frames - frames_sent;
+    uint32_t frames_encoded = 0;
+    size_t words_encoded = 0;
+    double encode_start = monotonic_seconds();
+    while (keep_running && frames_encoded < total_frames) {
+        uint32_t frames_this_chunk = dma_buffer_frames;
+        if (total_frames - frames_encoded < frames_this_chunk) {
+            frames_this_chunk = total_frames - frames_encoded;
         }
 
-        memset(chunk, 0, chunk_bytes);
         size_t words = 0;
+        size_t remaining_words = transfer_word_capacity - words_encoded;
         if (wav_mode) {
             size_t frames_read = fread(pcm_chunk, wav_info.block_align, frames_this_chunk, wav_file);
             if (frames_read == 0) {
@@ -387,8 +391,8 @@ int main(int argc, char **argv)
             words = spdif_bmc_encode_pcm_s16le_24(&state,
                                                   pcm_chunk,
                                                   frames_this_chunk,
-                                                  chunk,
-                                                  chunk_words);
+                                                  transfer_words + words_encoded,
+                                                  remaining_words);
         } else if (strcmp(options.mode, "sweep") == 0) {
             words = spdif_bmc_encode_sweep_24(&state,
                                               options.sweep_start,
@@ -396,62 +400,74 @@ int main(int argc, char **argv)
                                               options.amplitude_dbfs,
                                               frames_this_chunk,
                                               total_frames,
-                                              chunk,
-                                              chunk_words);
+                                              transfer_words + words_encoded,
+                                              remaining_words);
         } else {
             words = spdif_bmc_encode_sine_24(&state,
                                              options.tone,
                                              options.amplitude_dbfs,
                                              frames_this_chunk,
-                                             chunk,
-                                             chunk_words);
+                                             transfer_words + words_encoded,
+                                             remaining_words);
         }
+
         if (words == 0) {
             fprintf(stderr, "encoder produced no data\n");
-            break;
-        }
-
-        double transfer_start = monotonic_seconds();
-        int ret = pio_sm_xfer_data(pio, (uint)sm, PIO_DIR_TO_SM, (uint)(words * sizeof(uint32_t)), chunk);
-        double elapsed = monotonic_seconds() - transfer_start;
-        if (ret != 0) {
-            fprintf(stderr, "pio_sm_xfer_data failed: %s\n", strerror(errno));
-            break;
-        }
-        chunks_sent++;
-        total_xfer_seconds += elapsed;
-        if (elapsed > max_xfer_seconds) {
-            max_xfer_seconds = elapsed;
-        }
-        if (one_shot_mode) {
-            double expected = (double)frames_this_chunk / (double)options.rate;
-            sleep_seconds(expected - elapsed + 0.05);
-        } else {
-            double expected = (double)frames_this_chunk / (double)options.rate;
-            if (elapsed > expected * 1.10) {
-                slow_xfers++;
-                fprintf(stderr,
-                        "warning: DMA queue call took %.3fs for a %.3fs chunk; possible underrun/backpressure\n",
-                        elapsed,
-                        expected);
+            free(pcm_chunk);
+            free(transfer_words);
+            if (wav_file) {
+                fclose(wav_file);
             }
+            return 1;
         }
 
-        frames_sent += frames_this_chunk;
+        frames_encoded += frames_this_chunk;
+        words_encoded += words;
     }
 
-    if (!one_shot_mode && frames_sent > 0) {
-        double expected_stream_seconds = (double)frames_sent / (double)options.rate;
-        double queued_elapsed = monotonic_seconds() - stream_start;
-        double drain_seconds = expected_stream_seconds - queued_elapsed + 0.25;
-        if (drain_seconds < 0.10) {
-            drain_seconds = 0.10;
+    if (frames_encoded == 0 || words_encoded == 0) {
+        fprintf(stderr, "no encoded data to transmit\n");
+        free(pcm_chunk);
+        free(transfer_words);
+        if (wav_file) {
+            fclose(wav_file);
         }
-        printf("Queued data in %.3fs for %.3fs of audio; waiting %.3fs before stopping PIO.\n",
-               queued_elapsed,
-               expected_stream_seconds,
-               drain_seconds);
-        sleep_seconds(drain_seconds);
+        return 1;
+    }
+
+    size_t transfer_bytes = words_encoded * sizeof(uint32_t);
+    double encode_elapsed = monotonic_seconds() - encode_start;
+    printf("Encoded %u stereo frames into %zu bytes in %.3fs.\n",
+           frames_encoded,
+           transfer_bytes,
+           encode_elapsed);
+
+    PIO pio = pio0;
+    if (PIO_IS_ERR(pio)) {
+        fprintf(stderr, "cannot open pio0; check /dev/pio0, kernel, EEPROM, and gpio group permissions\n");
+        free(pcm_chunk);
+        free(transfer_words);
+        if (wav_file) {
+            fclose(wav_file);
+        }
+        return 1;
+    }
+
+    int sm = pio_claim_unused_sm(pio, true);
+    uint offset = pio_add_program(pio, &spdif_tx_program);
+    pio_sm_config_xfer(pio, (uint)sm, PIO_DIR_TO_SM, (uint)dma_buffer_bytes, options.dma_buffers);
+    pio_sm_clear_fifos(pio, (uint)sm);
+    spdif_tx_program_init(pio, (uint)sm, offset, options.gpio, (float)spdif_halfbit_rate(options.rate), options.pio_clock_hz);
+
+    printf("Submitting one contiguous transfer. Output is raw GPIO for lab testing only. Stop with Ctrl+C.\n");
+    double transfer_start = monotonic_seconds();
+    int ret = pio_sm_xfer_data(pio, (uint)sm, PIO_DIR_TO_SM, (uint)transfer_bytes, transfer_words);
+    double transfer_elapsed = monotonic_seconds() - transfer_start;
+    int transfer_ok = ret == 0;
+    if (!transfer_ok) {
+        fprintf(stderr, "pio_sm_xfer_data failed: %s\n", strerror(errno));
+    } else {
+        sleep_seconds(0.10);
     }
 
     pio_sm_set_enabled(pio, (uint)sm, false);
@@ -459,17 +475,16 @@ int main(int argc, char **argv)
     pio_remove_program(pio, &spdif_tx_program, offset);
     pio_close(pio);
     free(pcm_chunk);
-    free(chunk);
+    free(transfer_words);
     if (wav_file) {
         fclose(wav_file);
     }
 
-    printf("Done, sent %u stereo frames in %u DMA chunks. Max xfer call %.3fs, avg %.3fs, slow calls %u.\n",
-           frames_sent,
-           chunks_sent,
-           max_xfer_seconds,
-           chunks_sent ? total_xfer_seconds / (double)chunks_sent : 0.0,
-           slow_xfers);
-    return frames_sent == total_frames ? 0 : 1;
+    printf("Done, sent %u/%u stereo frames in one transfer. Transfer call %.3fs for %.3fs of audio.\n",
+           frames_encoded,
+           total_frames,
+           transfer_elapsed,
+           (double)frames_encoded / (double)options.rate);
+    return transfer_ok && frames_encoded == total_frames ? 0 : 1;
 }
 #endif

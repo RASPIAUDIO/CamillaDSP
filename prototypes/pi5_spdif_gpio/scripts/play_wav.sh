@@ -11,6 +11,7 @@ CHUNK_FRAMES="${SPDIF_CHUNK_FRAMES:-0}"
 if [ "$#" -lt 1 ]; then
   echo "Usage: $0 file.wav" >&2
   echo "Set SPDIF_GPIO=12, SPDIF_DMA_BUFFERS=4, or SPDIF_CHUNK_FRAMES=48000 to override defaults." >&2
+  echo "SPDIF_CHUNK_FRAMES controls the internal DMA bounce-buffer size; playback is one contiguous transfer." >&2
   exit 2
 fi
 
@@ -27,7 +28,7 @@ if [ ! -x "$PROJECT_DIR/build/spdif_pi5_pio_tx" ]; then
 fi
 
 echo "Playing WAV over S/PDIF on GPIO${GPIO}: $INPUT"
-echo "DMA buffers: ${DMA_BUFFERS}, chunk frames: ${CHUNK_FRAMES}"
+echo "DMA buffers: ${DMA_BUFFERS}, DMA bounce-buffer frames: ${CHUNK_FRAMES}"
 
 LD_LIBRARY_PATH="$PIOLIB_BUILD${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
   "$PROJECT_DIR/build/spdif_pi5_pio_tx" \
