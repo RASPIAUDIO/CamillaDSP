@@ -37,9 +37,9 @@ The included `spdif_pi5_pio_tx` does exactly this experimentally:
 - PIO program: one instruction, `out pins, 1`.
 - Data format: packed 32-bit words, MSB first.
 - Default output: GPIO12, physical pin 32.
-- Default audio: 48 kHz stereo, 1 kHz sine, -12 dBFS.
+- Default audio: 48 kHz stereo, 1 kHz sine, -18 dBFS.
 
-Risk: continuous lock depends on PIOLib/DMA feeding the FIFO without gaps. If there are underruns between buffer transfers, a receiver may unlock or click. A kernel driver is the cleaner product path.
+Risk: continuous lock depends on PIOLib/DMA feeding the FIFO without gaps. Early chunked tests produced an audible chopped "helicopter" noise on optical output, which is consistent with inter-chunk underruns. The default lock test now precomputes the full short tone and sends it as one DMA transfer. A kernel driver or circular DMA path is still the cleaner product path for continuous audio.
 
 On the RASPIAUDIO 8xOUT / 8xIN+8xOUT setup, do not use GPIO18-GPIO27 for this prototype. The Pi 5 `hifiberry-dac8x` overlay uses those pins for I2S0:
 
@@ -143,7 +143,7 @@ The receiver/DAC should report lock as PCM 48 kHz and play a 1 kHz sine. If it d
 ```bash
 ls -l /dev/pio0
 sudo dmesg | grep -i -E 'rp1|pio'
-LD_LIBRARY_PATH=third_party/piolib-build ./build/spdif_pi5_pio_tx --gpio 12 --rate 48000 --tone 1000 --seconds 3
+LD_LIBRARY_PATH=third_party/piolib-build ./build/spdif_pi5_pio_tx --gpio 12 --rate 48000 --tone 1000 --seconds 3 --amplitude-dbfs -18 --chunk-frames 0
 ```
 
 With a scope or logic analyser, GPIO12 should show a 6.144 Mbit/s BMC waveform for 48 kHz.

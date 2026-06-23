@@ -26,11 +26,14 @@ static void put_halfbit(spdif_word_packer_t *packer, uint8_t bit)
     }
 }
 
-static void put_preamble(spdif_word_packer_t *packer, uint8_t preamble)
+static void put_preamble(spdif_word_packer_t *packer, uint8_t preamble, uint8_t *last_level)
 {
+    uint8_t symbol = *last_level ? (uint8_t)~preamble : preamble;
+
     for (int bit = 7; bit >= 0; --bit) {
-        put_halfbit(packer, (uint8_t)((preamble >> bit) & 1u));
+        put_halfbit(packer, (uint8_t)((symbol >> bit) & 1u));
     }
+    *last_level = (uint8_t)(symbol & 1u);
 }
 
 static void put_bmc_data_bit(spdif_word_packer_t *packer, uint8_t data_bit, uint8_t *last_level)
@@ -62,7 +65,8 @@ static uint32_t sample_to_24_bits(int32_t sample)
 static int encode_subframe(spdif_word_packer_t *packer,
                            uint8_t preamble,
                            int32_t sample_24,
-                           uint8_t channel_status_bit)
+                           uint8_t channel_status_bit,
+                           uint8_t *last_level)
 {
     uint8_t data_bits[28];
     uint32_t sample = sample_to_24_bits(sample_24);
@@ -73,7 +77,7 @@ static int encode_subframe(spdif_word_packer_t *packer,
         return -1;
     }
 
-    put_preamble(packer, preamble);
+    put_preamble(packer, preamble, last_level);
 
     for (uint8_t bit = 0; bit < 24u; ++bit) {
         data_bits[index++] = (uint8_t)((sample >> bit) & 1u);
@@ -88,9 +92,8 @@ static int encode_subframe(spdif_word_packer_t *packer,
     }
     data_bits[index++] = parity; /* Makes the 28 transmitted data bits even parity. */
 
-    uint8_t last_level = 0;
     for (size_t bit = 0; bit < index; ++bit) {
-        put_bmc_data_bit(packer, data_bits[bit], &last_level);
+        put_bmc_data_bit(packer, data_bits[bit], last_level);
     }
 
     return packer->word_count <= packer->word_capacity ? 0 : -1;
@@ -161,10 +164,10 @@ int spdif_bmc_encode_stereo_frame(spdif_bmc_state_t *state,
     uint8_t left_status = get_channel_status_bit(state->channel_status_l, frame_in_block);
     uint8_t right_status = get_channel_status_bit(state->channel_status_r, frame_in_block);
 
-    if (encode_subframe(packer, left_preamble, left_sample_24, left_status) != 0) {
+    if (encode_subframe(packer, left_preamble, left_sample_24, left_status, &state->bmc_level) != 0) {
         return -1;
     }
-    if (encode_subframe(packer, SPDIF_PREAMBLE_W, right_sample_24, right_status) != 0) {
+    if (encode_subframe(packer, SPDIF_PREAMBLE_W, right_sample_24, right_status, &state->bmc_level) != 0) {
         return -1;
     }
 

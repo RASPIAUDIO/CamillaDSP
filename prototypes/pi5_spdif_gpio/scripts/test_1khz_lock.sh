@@ -24,5 +24,6 @@ LD_LIBRARY_PATH="$PIOLIB_BUILD${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
   --gpio "$GPIO" \
   --rate 48000 \
   --tone 1000 \
-  --seconds 30 \
-  --amplitude-dbfs -12
+  --seconds 10 \
+  --amplitude-dbfs -18 \
+  --chunk-frames 0

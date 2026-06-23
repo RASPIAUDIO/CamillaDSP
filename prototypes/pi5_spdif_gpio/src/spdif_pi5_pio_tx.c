@@ -27,7 +27,8 @@ typedef struct {
 static void usage(const char *argv0)
 {
     fprintf(stderr,
-            "Usage: %s [--gpio 12] [--rate 48000] [--tone 1000] [--seconds 10] [--amplitude-dbfs -12] [--chunk-frames 2048]\n",
+            "Usage: %s [--gpio 12] [--rate 48000] [--tone 1000] [--seconds 10] [--amplitude-dbfs -18] [--chunk-frames 0]\n"
+            "  --chunk-frames 0 precomputes the full test tone and sends it as one DMA transfer.\n",
             argv0);
 }
 
@@ -37,8 +38,8 @@ static int parse_options(int argc, char **argv, options_t *options)
     options->rate = 48000;
     options->tone = 1000.0;
     options->seconds = 10.0;
-    options->amplitude_dbfs = -12.0;
-    options->chunk_frames = 2048;
+    options->amplitude_dbfs = -18.0;
+    options->chunk_frames = 0;
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "--gpio") == 0 && i + 1 < argc) {
@@ -62,7 +63,7 @@ static int parse_options(int argc, char **argv, options_t *options)
         }
     }
 
-    if (options->rate == 0 || options->seconds <= 0.0 || options->chunk_frames == 0) {
+    if (options->rate == 0 || options->seconds <= 0.0) {
         usage(argv[0]);
         return -1;
     }
@@ -92,7 +93,10 @@ int main(int argc, char **argv)
     signal(SIGINT, handle_signal);
     signal(SIGTERM, handle_signal);
 
-    size_t chunk_words = spdif_packed_word_count_for_frames(options.chunk_frames);
+    uint32_t total_frames = (uint32_t)(options.seconds * (double)options.rate + 0.5);
+    uint32_t effective_chunk_frames = options.chunk_frames == 0 ? total_frames : options.chunk_frames;
+
+    size_t chunk_words = spdif_packed_word_count_for_frames(effective_chunk_frames);
     size_t chunk_bytes = chunk_words * sizeof(uint32_t);
     uint32_t *chunk = calloc(chunk_words, sizeof(uint32_t));
     if (!chunk) {
@@ -118,18 +122,20 @@ int main(int argc, char **argv)
            options.gpio,
            options.rate,
            spdif_halfbit_rate(options.rate),
-           options.chunk_frames,
+           effective_chunk_frames,
            chunk_bytes);
+    if (options.chunk_frames == 0) {
+        printf("Using one-shot DMA test mode to avoid inter-chunk underruns.\n");
+    }
     printf("Output is raw GPIO for lab testing only. Stop with Ctrl+C.\n");
 
     spdif_bmc_state_t state;
     spdif_bmc_state_init(&state, options.rate);
 
-    uint32_t total_frames = (uint32_t)(options.seconds * (double)options.rate + 0.5);
     uint32_t frames_sent = 0;
 
     while (keep_running && frames_sent < total_frames) {
-        uint32_t frames_this_chunk = options.chunk_frames;
+        uint32_t frames_this_chunk = effective_chunk_frames;
         if (total_frames - frames_sent < frames_this_chunk) {
             frames_this_chunk = total_frames - frames_sent;
         }

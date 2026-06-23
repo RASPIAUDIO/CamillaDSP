@@ -11,6 +11,7 @@
 typedef struct {
     uint32_t sample_rate;
     uint32_t sample_index;
+    uint8_t bmc_level;
     uint8_t channel_status_l[24];
     uint8_t channel_status_r[24];
 } spdif_bmc_state_t;
