@@ -30,6 +30,7 @@ typedef struct {
     double seconds;
     double amplitude_dbfs;
     uint32_t chunk_frames;
+    uint32_t dma_buffers;
 } options_t;
 
 typedef struct {
@@ -172,9 +173,10 @@ static void sleep_seconds(double seconds)
 static void usage(const char *argv0)
 {
     fprintf(stderr,
-            "Usage: %s [--gpio 12] [--rate 48000] [--pio-clock-hz 100000000] [--mode tone|sweep|wav] [--input file.wav] [--tone 1000] [--sweep-start 120] [--sweep-end 6000] [--seconds 2] [--amplitude-dbfs -18] [--chunk-frames 0]\n"
+            "Usage: %s [--gpio 12] [--rate 48000] [--pio-clock-hz 100000000] [--mode tone|sweep|wav] [--input file.wav] [--tone 1000] [--sweep-start 120] [--sweep-end 6000] [--seconds 2] [--amplitude-dbfs -18] [--chunk-frames 0] [--dma-buffers 4]\n"
             "  --chunk-frames 0 precomputes the full test tone and sends it as one DMA transfer.\n"
             "  For --mode wav, --chunk-frames 0 means roughly 1 second chunks fed into the PIOLib DMA queue.\n"
+            "  --dma-buffers N sets the PIOLib DMA queue depth for streaming modes; default is 4.\n"
             "  Keep one-shot tests short; transfers above about 2 seconds can hit the current PIOLib timeout.\n",
             argv0);
 }
@@ -192,6 +194,7 @@ static int parse_options(int argc, char **argv, options_t *options)
     options->seconds = 2.0;
     options->amplitude_dbfs = -18.0;
     options->chunk_frames = 0;
+    options->dma_buffers = 4;
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "--gpio") == 0 && i + 1 < argc) {
@@ -216,6 +219,8 @@ static int parse_options(int argc, char **argv, options_t *options)
             options->amplitude_dbfs = strtod(argv[++i], NULL);
         } else if (strcmp(argv[i], "--chunk-frames") == 0 && i + 1 < argc) {
             options->chunk_frames = (uint32_t)strtoul(argv[++i], NULL, 0);
+        } else if (strcmp(argv[i], "--dma-buffers") == 0 && i + 1 < argc) {
+            options->dma_buffers = (uint32_t)strtoul(argv[++i], NULL, 0);
         } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
             usage(argv[0]);
             return 1;
@@ -227,6 +232,10 @@ static int parse_options(int argc, char **argv, options_t *options)
 
     if (options->rate == 0 || options->pio_clock_hz == 0 || options->seconds <= 0.0) {
         usage(argv[0]);
+        return -1;
+    }
+    if (options->dma_buffers == 0 || options->dma_buffers > 16) {
+        fprintf(stderr, "--dma-buffers must be between 1 and 16\n");
         return -1;
     }
     if (strcmp(options->mode, "tone") != 0 && strcmp(options->mode, "sweep") != 0 && strcmp(options->mode, "wav") != 0) {
@@ -319,10 +328,9 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    const uint32_t dma_buffer_count = 4;
     int sm = pio_claim_unused_sm(pio, true);
     uint offset = pio_add_program(pio, &spdif_tx_program);
-    pio_sm_config_xfer(pio, (uint)sm, PIO_DIR_TO_SM, (uint)chunk_bytes, dma_buffer_count);
+    pio_sm_config_xfer(pio, (uint)sm, PIO_DIR_TO_SM, (uint)chunk_bytes, options.dma_buffers);
     pio_sm_clear_fifos(pio, (uint)sm);
     spdif_tx_program_init(pio, (uint)sm, offset, options.gpio, (float)spdif_halfbit_rate(options.rate), options.pio_clock_hz);
 
@@ -335,7 +343,7 @@ int main(int argc, char **argv)
            options.mode,
            effective_chunk_frames,
            chunk_bytes,
-           dma_buffer_count);
+           options.dma_buffers);
     if (wav_mode) {
         printf("WAV input %s, %u frames, %.2f seconds\n",
                options.input_path,
@@ -353,6 +361,10 @@ int main(int argc, char **argv)
     spdif_bmc_state_init(&state, options.rate);
 
     uint32_t frames_sent = 0;
+    uint32_t chunks_sent = 0;
+    uint32_t slow_xfers = 0;
+    double max_xfer_seconds = 0.0;
+    double total_xfer_seconds = 0.0;
 
     while (keep_running && frames_sent < total_frames) {
         uint32_t frames_this_chunk = effective_chunk_frames;
@@ -397,14 +409,28 @@ int main(int argc, char **argv)
 
         double transfer_start = monotonic_seconds();
         int ret = pio_sm_xfer_data(pio, (uint)sm, PIO_DIR_TO_SM, (uint)(words * sizeof(uint32_t)), chunk);
+        double elapsed = monotonic_seconds() - transfer_start;
         if (ret != 0) {
             fprintf(stderr, "pio_sm_xfer_data failed: %s\n", strerror(errno));
             break;
         }
+        chunks_sent++;
+        total_xfer_seconds += elapsed;
+        if (elapsed > max_xfer_seconds) {
+            max_xfer_seconds = elapsed;
+        }
         if (one_shot_mode) {
-            double elapsed = monotonic_seconds() - transfer_start;
             double expected = (double)frames_this_chunk / (double)options.rate;
             sleep_seconds(expected - elapsed + 0.05);
+        } else {
+            double expected = (double)frames_this_chunk / (double)options.rate;
+            if (elapsed > expected * 1.10) {
+                slow_xfers++;
+                fprintf(stderr,
+                        "warning: DMA queue call took %.3fs for a %.3fs chunk; possible underrun/backpressure\n",
+                        elapsed,
+                        expected);
+            }
         }
 
         frames_sent += frames_this_chunk;
@@ -412,7 +438,7 @@ int main(int argc, char **argv)
 
     if (!one_shot_mode && frames_sent > 0) {
         double chunk_seconds = (double)effective_chunk_frames / (double)options.rate;
-        sleep_seconds(chunk_seconds * (double)dma_buffer_count + 0.1);
+        sleep_seconds(chunk_seconds * (double)options.dma_buffers + 0.1);
     }
 
     pio_sm_set_enabled(pio, (uint)sm, false);
@@ -425,7 +451,12 @@ int main(int argc, char **argv)
         fclose(wav_file);
     }
 
-    printf("Done, sent %u stereo frames.\n", frames_sent);
+    printf("Done, sent %u stereo frames in %u DMA chunks. Max xfer call %.3fs, avg %.3fs, slow calls %u.\n",
+           frames_sent,
+           chunks_sent,
+           max_xfer_seconds,
+           chunks_sent ? total_xfer_seconds / (double)chunks_sent : 0.0,
+           slow_xfers);
     return frames_sent == total_frames ? 0 : 1;
 }
 #endif

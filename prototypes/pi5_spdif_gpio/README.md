@@ -43,6 +43,8 @@ Risk: continuous lock depends on PIOLib/DMA feeding the FIFO without gaps. Early
 
 The WAV playback path uses PIOLib's multi-buffer DMA queue with about one second per buffer. This is the best userspace prototype path found so far. It is not yet a real ALSA circular-DMA driver, but it keeps several DMA buffers queued so a full WAV file can be streamed instead of being limited to a short one-shot transfer.
 
+The buffering strategy is inspired by DSPi's S/PDIF output model on RP2040/RP2350: audio blocks are prepared ahead of time, the PIO output is fed by DMA, and the firmware exposes diagnostics such as consumer-buffer fill and DMA starvation counters. On Raspberry Pi 5, PIOLib does not currently expose the same bare-metal circular-DMA control from userspace, so this prototype uses the closest reversible approach: a configurable PIOLib DMA queue plus transfer timing warnings. A product-grade version should move this into an ALSA/kernel driver or an external I2S-to-S/PDIF transmitter.
+
 On the RASPIAUDIO 8xOUT / 8xIN+8xOUT setup, do not use GPIO18-GPIO27 for this prototype. The Pi 5 `hifiberry-dac8x` overlay uses those pins for I2S0:
 
 - GPIO18: I2S0_SCLK
@@ -158,6 +160,14 @@ To play a WAV file, use PCM s16le stereo WAV. The file sample rate is used for S
 cd ~/CamillaDSP/prototypes/pi5_spdif_gpio
 ./scripts/play_wav.sh /path/to/file.wav
 ```
+
+The WAV helper defaults to GPIO12, four PIOLib DMA buffers, and about one second per buffer. For experiments:
+
+```bash
+SPDIF_DMA_BUFFERS=8 SPDIF_CHUNK_FRAMES=48000 ./scripts/play_wav.sh /path/to/file.wav
+```
+
+If the program prints slow transfer warnings or the receiver loses lock, increase `SPDIF_DMA_BUFFERS` or `SPDIF_CHUNK_FRAMES`. If 44.1 kHz does not lock on a given receiver, convert the WAV to 48 kHz PCM s16le and test again before blaming the GPIO stage.
 
 ## Wiring
 
