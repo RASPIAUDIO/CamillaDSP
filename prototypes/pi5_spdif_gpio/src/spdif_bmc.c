@@ -234,6 +234,30 @@ size_t spdif_bmc_encode_sweep_24(spdif_bmc_state_t *state,
     return packer.word_count;
 }
 
+size_t spdif_bmc_encode_pcm_s16le_24(spdif_bmc_state_t *state,
+                                     const int16_t *interleaved_stereo,
+                                     uint32_t frames,
+                                     uint32_t *words,
+                                     size_t word_capacity)
+{
+    spdif_word_packer_t packer;
+
+    spdif_word_packer_init(&packer, words, word_capacity);
+
+    for (uint32_t frame = 0; frame < frames; ++frame) {
+        int32_t left = (int32_t)interleaved_stereo[frame * 2u] << 8;
+        int32_t right = (int32_t)interleaved_stereo[frame * 2u + 1u] << 8;
+        if (spdif_bmc_encode_stereo_frame(state, left, right, &packer) != 0) {
+            break;
+        }
+    }
+
+    if (spdif_word_packer_flush(&packer) != 0) {
+        return 0;
+    }
+    return packer.word_count;
+}
+
 uint32_t spdif_halfbit_rate(uint32_t sample_rate)
 {
     return sample_rate * SPDIF_HALFBITS_PER_STEREO_FRAME;

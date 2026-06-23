@@ -41,6 +41,8 @@ The included `spdif_pi5_pio_tx` does exactly this experimentally:
 
 Risk: continuous lock depends on PIOLib/DMA feeding the FIFO without gaps. Early chunked tests produced an audible chopped "helicopter" noise on optical output, which is consistent with inter-chunk underruns. The default lock tests now precompute a short 2 second signal and send it as one DMA transfer. Longer one-shot transfers can hit the current PIOLib timeout. A kernel driver or circular DMA path is still the cleaner product path for continuous audio.
 
+The WAV playback path uses PIOLib's multi-buffer DMA queue with about one second per buffer. This is the best userspace prototype path found so far. It is not yet a real ALSA circular-DMA driver, but it keeps several DMA buffers queued so a full WAV file can be streamed instead of being limited to a short one-shot transfer.
+
 On the RASPIAUDIO 8xOUT / 8xIN+8xOUT setup, do not use GPIO18-GPIO27 for this prototype. The Pi 5 `hifiberry-dac8x` overlay uses those pins for I2S0:
 
 - GPIO18: I2S0_SCLK
@@ -149,6 +151,13 @@ LD_LIBRARY_PATH=third_party/piolib-build ./build/spdif_pi5_pio_tx --gpio 12 --ra
 ```
 
 With a scope or logic analyser, GPIO12 should show a 6.144 Mbit/s BMC waveform for 48 kHz.
+
+To play a WAV file, use PCM s16le stereo WAV. The file sample rate is used for S/PDIF channel status and clocking.
+
+```bash
+cd ~/CamillaDSP/prototypes/pi5_spdif_gpio
+./scripts/play_wav.sh /path/to/file.wav
+```
 
 ## Wiring
 
