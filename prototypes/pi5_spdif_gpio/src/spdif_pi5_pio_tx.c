@@ -365,6 +365,7 @@ int main(int argc, char **argv)
     uint32_t slow_xfers = 0;
     double max_xfer_seconds = 0.0;
     double total_xfer_seconds = 0.0;
+    double stream_start = monotonic_seconds();
 
     while (keep_running && frames_sent < total_frames) {
         uint32_t frames_this_chunk = effective_chunk_frames;
@@ -437,8 +438,17 @@ int main(int argc, char **argv)
     }
 
     if (!one_shot_mode && frames_sent > 0) {
-        double chunk_seconds = (double)effective_chunk_frames / (double)options.rate;
-        sleep_seconds(chunk_seconds * (double)options.dma_buffers + 0.1);
+        double expected_stream_seconds = (double)frames_sent / (double)options.rate;
+        double queued_elapsed = monotonic_seconds() - stream_start;
+        double drain_seconds = expected_stream_seconds - queued_elapsed + 0.25;
+        if (drain_seconds < 0.10) {
+            drain_seconds = 0.10;
+        }
+        printf("Queued data in %.3fs for %.3fs of audio; waiting %.3fs before stopping PIO.\n",
+               queued_elapsed,
+               expected_stream_seconds,
+               drain_seconds);
+        sleep_seconds(drain_seconds);
     }
 
     pio_sm_set_enabled(pio, (uint)sm, false);

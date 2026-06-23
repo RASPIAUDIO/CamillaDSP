@@ -161,7 +161,7 @@ cd ~/CamillaDSP/prototypes/pi5_spdif_gpio
 ./scripts/play_wav.sh /path/to/file.wav
 ```
 
-The WAV helper defaults to GPIO12, four PIOLib DMA buffers, and about one second per buffer. For experiments:
+The WAV helper defaults to GPIO12, four PIOLib DMA buffers, and about one second per buffer. The process intentionally waits for the full audio duration before stopping PIO, because PIOLib may accept queued data faster than the physical S/PDIF stream drains. For experiments:
 
 ```bash
 SPDIF_DMA_BUFFERS=8 SPDIF_CHUNK_FRAMES=48000 ./scripts/play_wav.sh /path/to/file.wav
