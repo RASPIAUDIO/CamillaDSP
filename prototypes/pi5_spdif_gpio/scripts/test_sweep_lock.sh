@@ -17,15 +17,16 @@ if [ ! -x "$PROJECT_DIR/build/spdif_pi5_pio_tx" ]; then
 fi
 
 echo "Connect GPIO${GPIO} through a safe prototype output stage to a S/PDIF receiver."
-echo "The receiver should lock as PCM 48 kHz and play a 2 second 1 kHz sine."
+echo "The receiver should lock as PCM 48 kHz and play a 2 second 120 Hz -> 6 kHz sweep."
 
 LD_LIBRARY_PATH="$PIOLIB_BUILD${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
   "$PROJECT_DIR/build/spdif_pi5_pio_tx" \
   --gpio "$GPIO" \
   --rate 48000 \
   --pio-clock-hz 100000000 \
-  --mode tone \
-  --tone 1000 \
+  --mode sweep \
+  --sweep-start 120 \
+  --sweep-end 6000 \
   --seconds 2 \
   --amplitude-dbfs -18 \
   --chunk-frames 0

@@ -202,6 +202,38 @@ size_t spdif_bmc_encode_sine_24(spdif_bmc_state_t *state,
     return packer.word_count;
 }
 
+size_t spdif_bmc_encode_sweep_24(spdif_bmc_state_t *state,
+                                 double start_hz,
+                                 double end_hz,
+                                 double amplitude_dbfs,
+                                 uint32_t frames,
+                                 uint32_t sweep_total_frames,
+                                 uint32_t *words,
+                                 size_t word_capacity)
+{
+    spdif_word_packer_t packer;
+    const double pi = 3.14159265358979323846;
+    double amplitude = pow(10.0, amplitude_dbfs / 20.0) * 8388607.0;
+    double sweep_seconds = (double)sweep_total_frames / (double)state->sample_rate;
+    double sweep_rate = sweep_seconds > 0.0 ? (end_hz - start_hz) / sweep_seconds : 0.0;
+
+    spdif_word_packer_init(&packer, words, word_capacity);
+
+    for (uint32_t frame = 0; frame < frames; ++frame) {
+        double t = (double)state->sample_index / (double)state->sample_rate;
+        double phase = 2.0 * pi * (start_hz * t + 0.5 * sweep_rate * t * t);
+        int32_t sample = (int32_t)lrint(sin(phase) * amplitude);
+        if (spdif_bmc_encode_stereo_frame(state, sample, sample, &packer) != 0) {
+            break;
+        }
+    }
+
+    if (spdif_word_packer_flush(&packer) != 0) {
+        return 0;
+    }
+    return packer.word_count;
+}
+
 uint32_t spdif_halfbit_rate(uint32_t sample_rate)
 {
     return sample_rate * SPDIF_HALFBITS_PER_STEREO_FRAME;

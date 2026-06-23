@@ -51,6 +51,7 @@ Build complete.
 
 Test command:
   cd "$PROJECT_DIR"
-  LD_LIBRARY_PATH="$PIOLIB_BUILD" ./build/spdif_pi5_pio_tx --gpio 12 --rate 48000 --pio-clock-hz 100000000 --tone 1000 --seconds 1 --amplitude-dbfs -18 --chunk-frames 0
+  ./scripts/test_1khz_lock.sh
+  ./scripts/test_sweep_lock.sh
 
 MSG

@@ -41,6 +41,15 @@ size_t spdif_bmc_encode_sine_24(spdif_bmc_state_t *state,
                                 uint32_t *words,
                                 size_t word_capacity);
 
+size_t spdif_bmc_encode_sweep_24(spdif_bmc_state_t *state,
+                                 double start_hz,
+                                 double end_hz,
+                                 double amplitude_dbfs,
+                                 uint32_t frames,
+                                 uint32_t sweep_total_frames,
+                                 uint32_t *words,
+                                 size_t word_capacity);
+
 uint32_t spdif_halfbit_rate(uint32_t sample_rate);
 size_t spdif_packed_word_count_for_frames(uint32_t frames);
 size_t spdif_packed_byte_count_for_frames(uint32_t frames);
