@@ -26,7 +26,7 @@ static inline pio_sm_config spdif_tx_program_get_default_config(uint offset)
     return c;
 }
 
-static inline void spdif_tx_program_init(PIO pio, uint sm, uint offset, uint gpio, float bit_rate)
+static inline void spdif_tx_program_init(PIO pio, uint sm, uint offset, uint gpio, float bit_rate, uint32_t pio_clock_hz)
 {
     pio_gpio_init(pio, gpio);
     pio_sm_set_consecutive_pindirs(pio, sm, gpio, 1, true);
@@ -35,7 +35,7 @@ static inline void spdif_tx_program_init(PIO pio, uint sm, uint offset, uint gpi
     sm_config_set_out_pins(&c, gpio, 1);
     sm_config_set_out_shift(&c, false, true, 32);
     sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
-    sm_config_set_clkdiv(&c, (float)clock_get_hz(clk_sys) / bit_rate);
+    sm_config_set_clkdiv(&c, (float)pio_clock_hz / bit_rate);
 
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_set_enabled(pio, sm, true);

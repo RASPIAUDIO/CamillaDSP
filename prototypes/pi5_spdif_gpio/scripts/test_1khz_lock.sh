@@ -23,7 +23,8 @@ LD_LIBRARY_PATH="$PIOLIB_BUILD${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
   "$PROJECT_DIR/build/spdif_pi5_pio_tx" \
   --gpio "$GPIO" \
   --rate 48000 \
+  --pio-clock-hz 100000000 \
   --tone 1000 \
-  --seconds 10 \
+  --seconds 1 \
   --amplitude-dbfs -18 \
   --chunk-frames 0

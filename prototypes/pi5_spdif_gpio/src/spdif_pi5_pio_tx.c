@@ -18,6 +18,7 @@ static void handle_signal(int signal_number)
 typedef struct {
     unsigned int gpio;
     uint32_t rate;
+    uint32_t pio_clock_hz;
     double tone;
     double seconds;
     double amplitude_dbfs;
@@ -27,8 +28,9 @@ typedef struct {
 static void usage(const char *argv0)
 {
     fprintf(stderr,
-            "Usage: %s [--gpio 12] [--rate 48000] [--tone 1000] [--seconds 10] [--amplitude-dbfs -18] [--chunk-frames 0]\n"
-            "  --chunk-frames 0 precomputes the full test tone and sends it as one DMA transfer.\n",
+            "Usage: %s [--gpio 12] [--rate 48000] [--pio-clock-hz 100000000] [--tone 1000] [--seconds 1] [--amplitude-dbfs -18] [--chunk-frames 0]\n"
+            "  --chunk-frames 0 precomputes the full test tone and sends it as one DMA transfer.\n"
+            "  Keep one-shot tests short; long transfers can hit the current PIOLib timeout.\n",
             argv0);
 }
 
@@ -36,8 +38,9 @@ static int parse_options(int argc, char **argv, options_t *options)
 {
     options->gpio = 12;
     options->rate = 48000;
+    options->pio_clock_hz = 100000000;
     options->tone = 1000.0;
-    options->seconds = 10.0;
+    options->seconds = 1.0;
     options->amplitude_dbfs = -18.0;
     options->chunk_frames = 0;
 
@@ -46,6 +49,8 @@ static int parse_options(int argc, char **argv, options_t *options)
             options->gpio = (unsigned int)strtoul(argv[++i], NULL, 0);
         } else if (strcmp(argv[i], "--rate") == 0 && i + 1 < argc) {
             options->rate = (uint32_t)strtoul(argv[++i], NULL, 0);
+        } else if (strcmp(argv[i], "--pio-clock-hz") == 0 && i + 1 < argc) {
+            options->pio_clock_hz = (uint32_t)strtoul(argv[++i], NULL, 0);
         } else if (strcmp(argv[i], "--tone") == 0 && i + 1 < argc) {
             options->tone = strtod(argv[++i], NULL);
         } else if (strcmp(argv[i], "--seconds") == 0 && i + 1 < argc) {
@@ -63,7 +68,7 @@ static int parse_options(int argc, char **argv, options_t *options)
         }
     }
 
-    if (options->rate == 0 || options->seconds <= 0.0) {
+    if (options->rate == 0 || options->pio_clock_hz == 0 || options->seconds <= 0.0) {
         usage(argv[0]);
         return -1;
     }
@@ -115,13 +120,14 @@ int main(int argc, char **argv)
     uint offset = pio_add_program(pio, &spdif_tx_program);
     pio_sm_config_xfer(pio, (uint)sm, PIO_DIR_TO_SM, (uint)chunk_bytes, 4);
     pio_sm_clear_fifos(pio, (uint)sm);
-    spdif_tx_program_init(pio, (uint)sm, offset, options.gpio, (float)spdif_halfbit_rate(options.rate));
+    spdif_tx_program_init(pio, (uint)sm, offset, options.gpio, (float)spdif_halfbit_rate(options.rate), options.pio_clock_hz);
 
     printf("Pi 5 RP1/PIO S/PDIF experimental TX\n");
-    printf("GPIO %u, PCM %u Hz, PIO half-bit clock %u Hz, chunk %u frames/%zu bytes\n",
+    printf("GPIO %u, PCM %u Hz, S/PDIF half-bit clock %u Hz, PIO clock %u Hz, chunk %u frames/%zu bytes\n",
            options.gpio,
            options.rate,
            spdif_halfbit_rate(options.rate),
+           options.pio_clock_hz,
            effective_chunk_frames,
            chunk_bytes);
     if (options.chunk_frames == 0) {
