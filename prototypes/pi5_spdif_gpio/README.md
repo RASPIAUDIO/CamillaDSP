@@ -93,7 +93,7 @@ V1 is intentionally narrow:
 - Default raw output pin: GPIO12.
 - Module parameters: `gpio=12`, `drive_ma=8`, `zero_on_underrun=1`.
 
-The driver pre-encodes each ALSA period to S/PDIF BMC in kernel memory, queues the period to RP1 PIO DMA, advances the ALSA hardware pointer on DMA completion, then wakes a feeder kthread to queue the next period. This is not a true `dmaengine_prep_dma_cyclic` implementation yet; it is a periodic kernel DMA queue using the exported `rp1-pio` API. If this still shows any lock drop under stress, the next step is a lower-level RP1 DMAengine/cyclic path or an external I2S-to-S/PDIF transmitter.
+The driver pre-encodes each ALSA period to S/PDIF BMC in kernel memory and queues the period to RP1 PIO DMA. On DMA completion, the callback advances the ALSA hardware pointer, records one elapsed period, and wakes a feeder kthread. The feeder calls `snd_pcm_period_elapsed()` and queues the next period. This keeps ALSA notification and DMA rearming in kernel context without doing heavier ALSA work directly inside the RP1 PIO completion callback. This is not a true `dmaengine_prep_dma_cyclic` implementation yet; it is a periodic kernel DMA queue using the exported `rp1-pio` API. If this still shows any lock drop under stress, the next step is a lower-level RP1 DMAengine/cyclic path or an external I2S-to-S/PDIF transmitter.
 
 Do not use GPIO18-GPIO27 for this driver on a RASPIAUDIO 8xOUT or 8xIN+8xOUT setup. Those pins are reserved by the active I2S overlay.
 
