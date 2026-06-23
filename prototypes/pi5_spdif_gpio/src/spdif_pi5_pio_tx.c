@@ -173,9 +173,9 @@ static void sleep_seconds(double seconds)
 static void usage(const char *argv0)
 {
     fprintf(stderr,
-            "Usage: %s [--gpio 12] [--rate 48000] [--pio-clock-hz 100000000] [--mode tone|sweep|wav] [--input file.wav] [--tone 1000] [--sweep-start 120] [--sweep-end 6000] [--seconds 2] [--amplitude-dbfs -18] [--chunk-frames 0] [--dma-buffers 4]\n"
+            "Usage: %s [--gpio 12] [--rate 48000] [--pio-clock-hz 200000000] [--mode tone|sweep|wav] [--input file.wav] [--tone 1000] [--sweep-start 120] [--sweep-end 6000] [--seconds 2] [--amplitude-dbfs -18] [--chunk-frames 0] [--dma-buffers 4]\n"
             "  --chunk-frames 0 precomputes the full test tone and sends it as one DMA transfer.\n"
-            "  For --mode wav, --chunk-frames 0 means roughly 1 second chunks fed into the PIOLib DMA queue.\n"
+            "  For --mode wav, --chunk-frames 0 means roughly 0.5 second chunks fed into the PIOLib DMA queue.\n"
             "  --dma-buffers N sets the PIOLib DMA queue depth for streaming modes; default is 4.\n"
             "  Keep one-shot tests short; transfers above about 2 seconds can hit the current PIOLib timeout.\n",
             argv0);
@@ -185,7 +185,7 @@ static int parse_options(int argc, char **argv, options_t *options)
 {
     options->gpio = 12;
     options->rate = 48000;
-    options->pio_clock_hz = 100000000;
+    options->pio_clock_hz = 200000000;
     options->mode = "tone";
     options->input_path = NULL;
     options->tone = 1000.0;
@@ -292,7 +292,10 @@ int main(int argc, char **argv)
     int one_shot_mode = !wav_mode && options.chunk_frames == 0;
     uint32_t effective_chunk_frames = one_shot_mode ? total_frames : options.chunk_frames;
     if (effective_chunk_frames == 0) {
-        effective_chunk_frames = options.rate;
+        effective_chunk_frames = options.rate / 2u;
+        if (effective_chunk_frames == 0) {
+            effective_chunk_frames = options.rate;
+        }
     }
 
     size_t chunk_words = spdif_packed_word_count_for_frames(effective_chunk_frames);

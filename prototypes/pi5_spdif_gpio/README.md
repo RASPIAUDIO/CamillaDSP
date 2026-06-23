@@ -41,7 +41,7 @@ The included `spdif_pi5_pio_tx` does exactly this experimentally:
 
 Risk: continuous lock depends on PIOLib/DMA feeding the FIFO without gaps. Early chunked tests produced an audible chopped "helicopter" noise on optical output, which is consistent with inter-chunk underruns. The default lock tests now precompute a short 2 second signal and send it as one DMA transfer. Longer one-shot transfers can hit the current PIOLib timeout. A kernel driver or circular DMA path is still the cleaner product path for continuous audio.
 
-The WAV playback path uses PIOLib's multi-buffer DMA queue with about one second per buffer. This is the best userspace prototype path found so far. It is not yet a real ALSA circular-DMA driver, but it keeps several DMA buffers queued so a full WAV file can be streamed instead of being limited to a short one-shot transfer.
+The WAV playback path uses PIOLib's multi-buffer DMA queue with about 0.5 second per buffer. This is the best userspace prototype path found so far. It is not yet a real ALSA circular-DMA driver, but it keeps several DMA buffers queued so a full WAV file can be streamed instead of being limited to a short one-shot transfer. On the tested Pi 5, the RP1 PIO clock must be treated as 200 MHz; using 100 MHz makes S/PDIF play at exactly double speed.
 
 The buffering strategy is inspired by DSPi's S/PDIF output model on RP2040/RP2350: audio blocks are prepared ahead of time, the PIO output is fed by DMA, and the firmware exposes diagnostics such as consumer-buffer fill and DMA starvation counters. On Raspberry Pi 5, PIOLib does not currently expose the same bare-metal circular-DMA control from userspace, so this prototype uses the closest reversible approach: a configurable PIOLib DMA queue plus transfer timing warnings. A product-grade version should move this into an ALSA/kernel driver or an external I2S-to-S/PDIF transmitter.
 
@@ -148,8 +148,8 @@ The receiver/DAC should report lock as PCM 48 kHz. The first script plays a 2 se
 ```bash
 ls -l /dev/pio0
 sudo dmesg | grep -i -E 'rp1|pio'
-LD_LIBRARY_PATH=third_party/piolib-build ./build/spdif_pi5_pio_tx --gpio 12 --rate 48000 --pio-clock-hz 100000000 --mode tone --tone 1000 --seconds 2 --amplitude-dbfs -18 --chunk-frames 0
-LD_LIBRARY_PATH=third_party/piolib-build ./build/spdif_pi5_pio_tx --gpio 12 --rate 48000 --pio-clock-hz 100000000 --mode sweep --sweep-start 120 --sweep-end 6000 --seconds 2 --amplitude-dbfs -18 --chunk-frames 0
+LD_LIBRARY_PATH=third_party/piolib-build ./build/spdif_pi5_pio_tx --gpio 12 --rate 48000 --pio-clock-hz 200000000 --mode tone --tone 1000 --seconds 2 --amplitude-dbfs -18 --chunk-frames 0
+LD_LIBRARY_PATH=third_party/piolib-build ./build/spdif_pi5_pio_tx --gpio 12 --rate 48000 --pio-clock-hz 200000000 --mode sweep --sweep-start 120 --sweep-end 6000 --seconds 2 --amplitude-dbfs -18 --chunk-frames 0
 ```
 
 With a scope or logic analyser, GPIO12 should show a 6.144 Mbit/s BMC waveform for 48 kHz.
@@ -161,10 +161,10 @@ cd ~/CamillaDSP/prototypes/pi5_spdif_gpio
 ./scripts/play_wav.sh /path/to/file.wav
 ```
 
-The WAV helper defaults to GPIO12, four PIOLib DMA buffers, and about one second per buffer. The process intentionally waits for the full audio duration before stopping PIO, because PIOLib may accept queued data faster than the physical S/PDIF stream drains. For experiments:
+The WAV helper defaults to GPIO12, four PIOLib DMA buffers, 200 MHz RP1 PIO clock, and about 0.5 second per buffer. The process intentionally waits for the full audio duration before stopping PIO, because PIOLib may accept queued data faster than the physical S/PDIF stream drains. For experiments:
 
 ```bash
-SPDIF_DMA_BUFFERS=8 SPDIF_CHUNK_FRAMES=48000 ./scripts/play_wav.sh /path/to/file.wav
+SPDIF_DMA_BUFFERS=8 SPDIF_CHUNK_FRAMES=24000 ./scripts/play_wav.sh /path/to/file.wav
 ```
 
 If the program prints slow transfer warnings or the receiver loses lock, increase `SPDIF_DMA_BUFFERS` or `SPDIF_CHUNK_FRAMES`. If 44.1 kHz does not lock on a given receiver, convert the WAV to 48 kHz PCM s16le and test again before blaming the GPIO stage.

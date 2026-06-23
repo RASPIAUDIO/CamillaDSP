@@ -32,7 +32,7 @@ echo "DMA buffers: ${DMA_BUFFERS}, chunk frames: ${CHUNK_FRAMES}"
 LD_LIBRARY_PATH="$PIOLIB_BUILD${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
   "$PROJECT_DIR/build/spdif_pi5_pio_tx" \
   --gpio "$GPIO" \
-  --pio-clock-hz 100000000 \
+  --pio-clock-hz 200000000 \
   --mode wav \
   --input "$INPUT" \
   --chunk-frames "$CHUNK_FRAMES" \
