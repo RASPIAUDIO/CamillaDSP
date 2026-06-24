@@ -212,6 +212,17 @@ Known-good Pi 5 + RASPIAUDIO 8xIN+8xOUT optical loopback result:
 The reported latency is the complete loopback path, including the TOSLINK
 transmitter, optical converter, analog output, and ADC capture.
 
+For a longer measurement pass with channel mapping, latency, dropout, crosstalk,
+frequency-response sanity checks, and rough harmonic THD of the complete chain:
+
+```bash
+ADC_DEVICE=hw:CARD=sndrpihifiberry,DEV=0 ADC_CHANNELS=8 \
+  ./scripts/measure_optical_loopback_adc.py
+```
+
+See [`MEASUREMENTS.md`](MEASUREMENTS.md) for measured lab results and the
+recommended public wording.
+
 ## Wiring
 
 GPIO12 is a 3.3 V raw digital output. It is useful for lab work, but it is not
@@ -312,6 +323,7 @@ scripts/install_kernel_spdif_on_pi5.sh
 scripts/test_kernel_spdif_alsa.sh
 scripts/stress_kernel_spdif_alsa.sh
 scripts/validate_optical_loopback_adc.sh
+scripts/measure_optical_loopback_adc.py
 ```
 
 The older userspace PIOLib tools are kept for low-level experiments:
