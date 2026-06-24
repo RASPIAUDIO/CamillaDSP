@@ -1,0 +1,47 @@
+---
+title: "RASPIAUDIO signal generator to S/PDIF optical with FIR load"
+description: "Lab-only profile: internal 1 kHz stereo sine -> CamillaDSP FIR load -> RASPISPDIF optical stereo output."
+
+devices:
+  samplerate: 48000
+  chunksize: 960
+  target_level: 2880
+  adjust_period: 10
+  capture:
+    type: SignalGenerator
+    channels: 2
+    signal:
+      type: Sine
+      freq: 1000
+      level: -24.0
+  playback:
+    type: Alsa
+    channels: 2
+    device: "hw:CARD=RASPISPDIF,DEV=0"
+    format: S32_LE
+
+filters:
+  Master_Safety_Gain_minus_12dB:
+    type: Gain
+    description: Safe startup attenuation for optical receiver tests.
+    parameters:
+      gain: -12.0
+      inverted: false
+      mute: false
+      scale: dB
+  Stereo_FIR_Load_4096_Taps:
+    type: Conv
+    description: 4096-tap FIR convolution load. Generate the coefficient file with scripts/generate_fir_load_coeffs.py.
+    parameters:
+      type: Raw
+      filename: "/etc/camilladsp/coeffs/fir_load_4096_taps.txt"
+      format: TEXT
+
+pipeline:
+  - type: Filter
+    channels:
+      - 0
+      - 1
+    names:
+      - Master_Safety_Gain_minus_12dB
+      - Stereo_FIR_Load_4096_Taps

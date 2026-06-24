@@ -1,0 +1,64 @@
+---
+title: "RASPIAUDIO USB 7.1 front L/R to S/PDIF optical stereo with FIR load"
+description: "Same routing as the USB 7.1 front L/R optical profile, plus a safe master gain and a 4096-tap FIR convolution load on both S/PDIF channels."
+
+devices:
+  samplerate: 48000
+  chunksize: 960
+  target_level: 2880
+  adjust_period: 10
+  capture:
+    type: Alsa
+    channels: 8
+    device: "hw:CARD=UAC2Gadget,DEV=0"
+    format: S32_LE
+  playback:
+    type: Alsa
+    channels: 2
+    device: "hw:CARD=RASPISPDIF,DEV=0"
+    format: S32_LE
+
+mixers:
+  usb_front_lr_to_spdif_stereo:
+    channels:
+      in: 8
+      out: 2
+    mapping:
+      - dest: 0
+        sources:
+          - channel: 0
+            gain: 0
+            inverted: false
+      - dest: 1
+        sources:
+          - channel: 1
+            gain: 0
+            inverted: false
+
+filters:
+  Master_Safety_Gain_minus_12dB:
+    type: Gain
+    description: Safe startup attenuation for optical receiver tests.
+    parameters:
+      gain: -12.0
+      inverted: false
+      mute: false
+      scale: dB
+  Stereo_FIR_Load_4096_Taps:
+    type: Conv
+    description: 4096-tap FIR convolution load. Generate the coefficient file with scripts/generate_fir_load_coeffs.py.
+    parameters:
+      type: Raw
+      filename: "/etc/camilladsp/coeffs/fir_load_4096_taps.txt"
+      format: TEXT
+
+pipeline:
+  - type: Mixer
+    name: usb_front_lr_to_spdif_stereo
+  - type: Filter
+    channels:
+      - 0
+      - 1
+    names:
+      - Master_Safety_Gain_minus_12dB
+      - Stereo_FIR_Load_4096_Taps

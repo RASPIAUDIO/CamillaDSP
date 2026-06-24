@@ -121,6 +121,20 @@ If the file is already stereo 48 kHz `S16_LE`, you can play it directly:
 aplay -D hw:CARD=RASPISPDIF,DEV=0 /path/to/file.wav
 ```
 
+## Use it from CamillaDSP
+
+CamillaDSP can use the S/PDIF card as a normal ALSA playback device:
+
+```text
+hw:CARD=RASPISPDIF,DEV=0
+```
+
+For the USB-audio-to-optical profile and the 4096-tap FIR load test, see:
+
+```text
+docs/usb_gadget_2ch_to_spdif_optical.md
+```
+
 ## Quick test
 
 ```bash

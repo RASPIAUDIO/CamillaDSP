@@ -1,0 +1,40 @@
+---
+title: "RASPIAUDIO USB stereo to S/PDIF optical stereo"
+description: "Host USB stereo audio -> Raspberry Pi UAC2Gadget capture -> CamillaDSP -> RASPISPDIF optical stereo output. Fixed 48 kHz / S32_LE."
+
+devices:
+  samplerate: 48000
+  chunksize: 960
+  target_level: 2880
+  adjust_period: 10
+  capture:
+    type: Alsa
+    channels: 2
+    device: "hw:CARD=UAC2Gadget,DEV=0"
+    format: S32_LE
+  playback:
+    type: Alsa
+    channels: 2
+    device: "hw:CARD=RASPISPDIF,DEV=0"
+    format: S32_LE
+
+mixers:
+  usb_stereo_to_spdif_stereo:
+    channels:
+      in: 2
+      out: 2
+    mapping:
+      - dest: 0
+        sources:
+          - channel: 0
+            gain: 0
+            inverted: false
+      - dest: 1
+        sources:
+          - channel: 1
+            gain: 0
+            inverted: false
+
+pipeline:
+  - type: Mixer
+    name: usb_stereo_to_spdif_stereo

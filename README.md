@@ -150,3 +150,4 @@ Read the preset guide before connecting amplifiers and tweeters:
 - 2-channel USB input example: [docs/usb_gadget_2ch_to_8xout.md](docs/usb_gadget_2ch_to_8xout.md)
 - 8-channel USB input example: [docs/usb_gadget_8ch_to_8xout.md](docs/usb_gadget_8ch_to_8xout.md)
 - Raspberry Pi 5 GPIO S/PDIF OUT guide: [prototypes/pi5_spdif_gpio/README.md](prototypes/pi5_spdif_gpio/README.md)
+- USB stereo to optical S/PDIF profile: [docs/usb_gadget_2ch_to_spdif_optical.md](docs/usb_gadget_2ch_to_spdif_optical.md)
