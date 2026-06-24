@@ -13,6 +13,8 @@ stereo WAV playback after the underrun fix. Treat the raw GPIO output as a
 prototype until the final coax/TOSLINK output stage, receiver lock, and jitter
 are measured.
 
+![Minimal Raspberry Pi 5 S/PDIF optical output using GPIO12 and an LED](../../docs/assets/pi5-spdif-minimal-led-toslink.png)
+
 ## What it does
 
 ```text

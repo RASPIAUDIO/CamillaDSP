@@ -126,6 +126,8 @@ clean audio. For a cleaner mechanical product, use a ready-made TOSLINK
 transmitter socket/module with the LED already included; the optical principle
 is the same, but cable alignment and mounting are much better.
 
+![Minimal Raspberry Pi 5 S/PDIF optical output using GPIO12 and an LED](docs/assets/pi5-spdif-minimal-led-toslink.png)
+
 Read the validated USB-to-TOSLINK guide:
 [docs/usb_gadget_2ch_to_spdif_optical.md](docs/usb_gadget_2ch_to_spdif_optical.md)
 
