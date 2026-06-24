@@ -7,3 +7,5 @@ prototypes/pi5_spdif_gpio/kernel/*.mod.c
 prototypes/pi5_spdif_gpio/kernel/.*.cmd
 prototypes/pi5_spdif_gpio/kernel/Module.symvers
 prototypes/pi5_spdif_gpio/kernel/modules.order
+__pycache__/
+*.pyc
