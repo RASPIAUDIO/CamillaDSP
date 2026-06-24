@@ -3,10 +3,11 @@
  * Experimental Raspberry Pi 5 RP1/PIO S/PDIF ALSA playback driver.
  *
  * V1 is intentionally fixed at 48 kHz, stereo, S16_LE/S32_LE. It uses the
- * Raspberry Pi rp1-pio kernel API and re-arms one 20 ms DMA period at a time.
+ * Raspberry Pi rp1-pio kernel API and re-arms one DMA period at a time.
  */
 
 #include <linux/err.h>
+#include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/kthread.h>
 #include <linux/module.h>
@@ -285,6 +286,7 @@ static int spdif_encode_period(struct raspiaudio_spdif *chip, u32 *dst)
 	struct snd_pcm_runtime *runtime;
 	struct spdif_word_packer packer;
 	bool have_data;
+	unsigned int queued;
 	u32 frame;
 	int ret;
 
@@ -296,9 +298,17 @@ static int spdif_encode_period(struct raspiaudio_spdif *chip, u32 *dst)
 		have_data = spdif_period_has_data(chip, substream->runtime);
 
 	if (!have_data) {
+		spin_lock_irq(&chip->lock);
+		queued = chip->queued;
+		spin_unlock_irq(&chip->lock);
+		if (queued)
+			return -EAGAIN;
 		if (!zero_on_underrun)
 			return -EPIPE;
 		chip->underruns++;
+		if ((chip->underruns & (chip->underruns - 1)) == 0)
+			pr_warn("%s: encoded silence period, underruns=%u\n",
+				DRIVER_NAME, chip->underruns);
 	}
 
 	runtime = substream ? substream->runtime : NULL;
@@ -464,6 +474,10 @@ static int spdif_feeder_thread(void *data)
 			spin_unlock_irq(&chip->lock);
 
 			ret = spdif_submit_next_period(chip);
+			if (ret == -EAGAIN) {
+				usleep_range(1000, 2000);
+				continue;
+			}
 			if (ret) {
 				spin_lock_irq(&chip->lock);
 				chip->dma_errors++;
