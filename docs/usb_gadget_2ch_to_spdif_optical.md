@@ -65,6 +65,9 @@ The FIR coefficient file is generated separately so the YAML stays readable.
 - Capture device for the USB profiles: `hw:CARD=UAC2Gadget,DEV=0`.
 - The S/PDIF driver currently uses 20 ms ALSA periods, so these profiles use
   `chunksize: 960` and `target_level: 2880`.
+- The USB capture clock and the S/PDIF playback clock are independent. The USB
+  profiles therefore enable CamillaDSP rate adjustment with
+  `enable_rate_adjust: true`, `adjust_period: 1`, and `queuelimit: 8`.
 
 ## Install the profiles on the Pi
 
@@ -151,8 +154,6 @@ Tested on the RASPIAUDIO Raspberry Pi 5 lab unit on 2026-06-24:
 - CamillaDSP version: `4.1.3`.
 - USB gadget card present as `UAC2Gadget`.
 - Optical S/PDIF card present as `RASPISPDIF`.
-- `usb_gadget_8ch_48k_front_lr_to_spdif_optical_stereo.yml` opened the current
-  8-channel USB gadget and `RASPISPDIF` without channel errors.
 - With no USB host audio playing, CamillaDSP reports `Capture device is
   stalled`; this is expected and clears when the host sends audio.
 - `signalgen_1khz_48k_to_spdif_optical_fir_load.yml` ran for 30 seconds with
@@ -161,6 +162,19 @@ Tested on the RASPIAUDIO Raspberry Pi 5 lab unit on 2026-06-24:
   Raspberry Pi 5.
 - No new S/PDIF underrun, silence-period, PIO, or DMA messages were printed in
   the kernel log during the FIR run.
+- A real USB radio stream was tested through this chain:
+  `Windows -> USB gadget -> CamillaDSP FIR -> optical S/PDIF -> TOSLINK DAC ->
+  RASPIAUDIO ADC`.
+- Without rate adjustment, `usb_gadget_8ch_48k_front_lr_to_spdif_optical_stereo.yml`
+  produced repeated capture stalls, playback underruns, and audible optical
+  dropouts.
+- With `enable_rate_adjust: true`, `adjust_period: 1`, `queuelimit: 8`, and
+  `chunksize: 960`, the FIR profile ran for 5 minutes. The only CamillaDSP
+  stalls were two startup events, with `0` playback underruns and `0` sample-rate
+  change warnings afterwards.
+- The 5-minute ADC capture had active audio on channels 0 and 1, `0` silent
+  100 ms windows below `-80 dBFS`, and `0` relative 100 ms drops deeper than
+  35 dB below the median level.
 
 ## Notes for editing
 

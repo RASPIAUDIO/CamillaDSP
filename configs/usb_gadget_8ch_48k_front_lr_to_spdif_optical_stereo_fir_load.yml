@@ -5,8 +5,10 @@ description: "Same routing as the USB 7.1 front L/R optical profile, plus a safe
 devices:
   samplerate: 48000
   chunksize: 960
+  queuelimit: 8
   target_level: 2880
-  adjust_period: 10
+  adjust_period: 1
+  enable_rate_adjust: true
   capture:
     type: Alsa
     channels: 8
