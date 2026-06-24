@@ -153,6 +153,65 @@ dmesg -w
 If the driver logs `encoded silence period`, ALSA did not feed the card quickly
 enough and the output may contain a mute gap.
 
+## Optical loopback validation
+
+For the RASPIAUDIO product path, optical is the priority. A practical validation
+setup is:
+
+```text
+GPIO12 S/PDIF
+    -> TOSLINK transmitter
+    -> optical cable
+    -> TOSLINK-to-analog converter
+    -> analog jack back into 8xIN / 8xIN+8xOUT ADC inputs
+```
+
+This proves that the optical S/PDIF stream carries real audio continuously and
+lets us capture the result with the Pi ADC. It does not replace a final optical
+jitter or compliance measurement, but it is the most useful functional test.
+
+Run:
+
+```bash
+cd ~/CamillaDSP/prototypes/pi5_spdif_gpio
+
+arecord -l
+
+ADC_DEVICE=hw:CARD=sndrpihifiberry,DEV=0 \
+ADC_CHANNELS=8 \
+./scripts/validate_optical_loopback_adc.sh
+```
+
+If `arecord -l` shows another capture card name, replace `ADC_DEVICE` with that
+device.
+
+The RASPIAUDIO 8xIN+8xOUT ADC path is captured as `S32_LE`; the script analyzes
+that 32-bit full-scale stream by default.
+
+The script:
+
+- Generates a 48 kHz stereo test WAV.
+- Plays it through `RASPISPDIF`.
+- Records all ADC channels as raw PCM.
+- Finds which ADC channels received the converter output.
+- Estimates loopback latency from a marker burst.
+- Checks 50 ms tone blocks for mute gaps.
+- Saves a summary, CSV metrics, raw capture, playback log, capture log, and
+  filtered kernel log under `out/optical_loopback_*`.
+
+If your converter is plugged into different ADC inputs, keep `ADC_CHANNELS=8`
+and read the strongest channels from the generated summary.
+
+Known-good Pi 5 + RASPIAUDIO 8xIN+8xOUT optical loopback result:
+
+- `IN0` carried the left test tone.
+- `IN1` carried the right test tone.
+- Other ADC channels stayed near the noise floor.
+- The active channels showed `0` 50 ms dropout blocks.
+
+The reported latency is the complete loopback path, including the TOSLINK
+transmitter, optical converter, analog output, and ADC capture.
+
 ## Wiring
 
 GPIO12 is a 3.3 V raw digital output. It is useful for lab work, but it is not
@@ -252,6 +311,7 @@ kernel/raspiaudio_spdif_pio.c
 scripts/install_kernel_spdif_on_pi5.sh
 scripts/test_kernel_spdif_alsa.sh
 scripts/stress_kernel_spdif_alsa.sh
+scripts/validate_optical_loopback_adc.sh
 ```
 
 The older userspace PIOLib tools are kept for low-level experiments:
