@@ -1,0 +1,9 @@
+# Generated S/PDIF prototype artifacts
+prototypes/pi5_spdif_gpio/out/
+prototypes/pi5_spdif_gpio/kernel/*.o
+prototypes/pi5_spdif_gpio/kernel/*.ko
+prototypes/pi5_spdif_gpio/kernel/*.mod
+prototypes/pi5_spdif_gpio/kernel/*.mod.c
+prototypes/pi5_spdif_gpio/kernel/.*.cmd
+prototypes/pi5_spdif_gpio/kernel/Module.symvers
+prototypes/pi5_spdif_gpio/kernel/modules.order
