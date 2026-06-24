@@ -175,6 +175,10 @@ Tested on the RASPIAUDIO Raspberry Pi 5 lab unit on 2026-06-24:
 - The 5-minute ADC capture had active audio on channels 0 and 1, `0` silent
   100 ms windows below `-80 dBFS`, and `0` relative 100 ms drops deeper than
   35 dB below the median level.
+- The installed `/etc/camilladsp/usb_gadget_8ch_48k_front_lr_to_spdif_optical_stereo_fir_load.yml`
+  profile was also checked for 3 minutes. It reported `0` playback underruns
+  and `0` sample-rate change warnings after startup, and the TOSLINK-to-analog
+  jack converter output was validated by listening.
 
 ## Notes for editing
 
