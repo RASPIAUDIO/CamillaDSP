@@ -33,10 +33,10 @@ cat >/etc/modprobe.d/raspiaudio-spdif.conf <<EOF
 options ${MODULE_NAME} gpio=${GPIO} drive_ma=${DRIVE_MA} zero_on_underrun=${ZERO_ON_UNDERRUN}
 EOF
 
-cat >/etc/modules-load.d/raspiaudio-spdif.conf <<EOF
-rp1-pio
-${MODULE_NAME}
-EOF
+# Loading through modules-load.d can run before RP1/PIO is ready on Pi 5.
+# The appliance uses raspiaudio-spdif.service instead, ordered before CamillaDSP.
+rm -f /etc/modules-load.d/raspiaudio-spdif.conf
+rm -f /etc/modules-load.d/raspiaudio-spdif-pio.conf
 
 depmod
 
@@ -50,5 +50,6 @@ install -d -m 0755 /etc/raspiaudio
 date -Is >"$STAMP"
 
 systemctl disable raspiaudio-spdif-firstboot.service >/dev/null 2>&1 || true
+systemctl enable raspiaudio-spdif.service >/dev/null 2>&1 || true
 
 echo "Installed ${MODULE_NAME} for kernel $(uname -r) on GPIO${GPIO}."

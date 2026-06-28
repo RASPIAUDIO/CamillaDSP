@@ -94,9 +94,10 @@ install_spdif_driver() {
   cp -a "$REPO_DIR/prototypes/pi5_spdif_gpio/kernel" /opt/raspiaudio-spdif-gpio/
   install -m 0755 "$SCRIPT_DIR/bin/raspiaudio-install-spdif-driver" /usr/local/sbin/raspiaudio-install-spdif-driver
   install -m 0644 "$SCRIPT_DIR/systemd/raspiaudio-spdif-firstboot.service" /etc/systemd/system/raspiaudio-spdif-firstboot.service
+  install -m 0644 "$SCRIPT_DIR/systemd/raspiaudio-spdif.service" /etc/systemd/system/raspiaudio-spdif.service
 
   if [ "$IMAGE_BUILD" = "1" ] || [ "$INSTALL_SPDIF_DRIVER" = "defer" ]; then
-    systemctl_enable raspiaudio-spdif-firstboot.service
+    systemctl_enable raspiaudio-spdif-firstboot.service raspiaudio-spdif.service
     return 0
   fi
 
@@ -139,7 +140,7 @@ install_services() {
   ln -sfn /etc/nginx/sites-available/raspiaudio.conf /etc/nginx/sites-enabled/raspiaudio.conf
 
   systemctl_daemon_reload
-  systemctl_enable avahi-daemon nginx camilladsp.service camillagui.service raspiaudio-web.service
+  systemctl_enable avahi-daemon nginx raspiaudio-spdif.service camilladsp.service camillagui.service raspiaudio-web.service
 }
 
 configure_hostname() {
@@ -157,6 +158,7 @@ activate_default_mode() {
 restart_services() {
   systemctl_restart avahi-daemon
   systemctl_restart nginx
+  systemctl_restart raspiaudio-spdif.service
   systemctl_restart camilladsp.service
   systemctl_restart camillagui.service
   systemctl_restart raspiaudio-web.service

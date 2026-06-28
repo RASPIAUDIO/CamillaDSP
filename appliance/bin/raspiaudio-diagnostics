@@ -40,10 +40,11 @@ run lsmod lsmod
 run usb-gadget sh -c 'ls -R /sys/kernel/config/usb_gadget 2>/dev/null || true'
 run udc sh -c 'ls -l /sys/class/udc 2>/dev/null || true'
 run dmesg-audio sh -c "dmesg | grep -i -E 'raspiaudio|camilla|snd|alsa|spdif|toslink|uac|g_audio|dwc2|hifiberry|xrun|underrun|error' || true"
-run services sh -c 'systemctl --no-pager --plain status camilladsp.service camillagui.service raspiaudio-web.service nginx avahi-daemon 2>&1 || true'
+run services sh -c 'systemctl --no-pager --plain status camilladsp.service camillagui.service raspiaudio-web.service raspiaudio-spdif.service nginx avahi-daemon 2>&1 || true'
 run journal-camilladsp sh -c 'journalctl -u camilladsp.service -n 300 --no-pager 2>&1 || true'
 run journal-camillagui sh -c 'journalctl -u camillagui.service -n 200 --no-pager 2>&1 || true'
 run journal-raspiaudio-web sh -c 'journalctl -u raspiaudio-web.service -n 200 --no-pager 2>&1 || true'
+run journal-raspiaudio-spdif sh -c 'journalctl -u raspiaudio-spdif.service -u raspiaudio-spdif-firstboot.service -n 200 --no-pager 2>&1 || true'
 run mode-status sh -c 'raspiaudio-mode status-json 2>/dev/null || true'
 run health sh -c 'raspiaudio-health 2>/dev/null || true'
 run health-json sh -c 'raspiaudio-health --json 2>/dev/null || true'

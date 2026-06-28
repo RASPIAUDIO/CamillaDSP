@@ -302,7 +302,7 @@ def validate_release(args):
         "Re-run the USB gadget installer.",
     )
 
-    for service in ("avahi-daemon", "nginx", "camilladsp.service", "camillagui.service", "raspiaudio-web.service"):
+    for service in ("avahi-daemon", "nginx", "raspiaudio-spdif.service", "camilladsp.service", "camillagui.service", "raspiaudio-web.service"):
         ok, state = service_state(service)
         add_check(
             checks,
@@ -314,7 +314,7 @@ def validate_release(args):
             f"Run systemctl status {service} and inspect diagnostics.",
         )
 
-    for service in ("avahi-daemon", "nginx", "camilladsp.service", "camillagui.service", "raspiaudio-web.service"):
+    for service in ("avahi-daemon", "nginx", "raspiaudio-spdif.service", "camilladsp.service", "camillagui.service", "raspiaudio-web.service"):
         ok, state = systemctl_enabled(service)
         add_check(
             checks,

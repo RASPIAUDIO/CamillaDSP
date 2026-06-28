@@ -55,7 +55,7 @@ EOF
 
 /usr/local/sbin/raspiaudio-mode set usb_7_1_to_8out || true
 systemctl disable ssh 2>/dev/null || true
-systemctl enable avahi-daemon nginx camilladsp.service camillagui.service raspiaudio-web.service >/dev/null 2>&1 || true
+systemctl enable avahi-daemon nginx raspiaudio-spdif.service camilladsp.service camillagui.service raspiaudio-web.service >/dev/null 2>&1 || true
 if [ -f /etc/systemd/system/raspiaudio-spdif-firstboot.service ]; then
   systemctl enable raspiaudio-spdif-firstboot.service >/dev/null 2>&1 || true
 fi

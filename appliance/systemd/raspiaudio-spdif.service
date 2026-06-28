@@ -1,0 +1,17 @@
+[Unit]
+Description=Load RASPIAUDIO Pi 5 S/PDIF optical driver
+ConditionPathExists=/etc/modprobe.d/raspiaudio-spdif.conf
+Wants=raspiaudio-spdif-firstboot.service
+After=systemd-modules-load.service raspiaudio-spdif-firstboot.service
+Before=camilladsp.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=/bin/sleep 2
+ExecStart=/usr/sbin/modprobe rp1-pio
+ExecStart=/usr/sbin/modprobe raspiaudio_spdif_pio
+ExecStop=/usr/sbin/modprobe -r raspiaudio_spdif_pio
+
+[Install]
+WantedBy=multi-user.target
