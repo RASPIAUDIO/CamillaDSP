@@ -1,0 +1,7 @@
+artifacts/** export-ignore
+image-builder/source/** export-ignore
+image-builder/output/** export-ignore
+prototypes/pi5_spdif_gpio/out/** export-ignore
+*.img export-ignore
+*.img.xz export-ignore
+*.raw export-ignore
