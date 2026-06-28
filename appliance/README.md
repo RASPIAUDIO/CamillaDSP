@@ -23,6 +23,17 @@ The normal user should not need SSH, ALSA commands, YAML editing, `dtoverlay`,
 8xOUT and 8xIN+8xOUT use the same Linux audio overlay. The hardware selector in
 the appliance only changes the board mode and the optional ADC driver option.
 
+For the 8xIN+8xOUT board, the appliance includes local 8-channel ADC capture and
+8-channel analog playback support:
+
+- analog inputs: `hw:CARD=sndrpihifiberry,DEV=1`
+- analog outputs: `hw:CARD=sndrpihifiberry,DEV=0`
+- CamillaDSP monitor profile: `8xin8xout_physical_passthrough.yml`
+
+The beginner V1 USB gadget is still playback-only from the host computer to the
+Pi: `PC USB 7.1 -> CamillaDSP -> 8 analog outputs`. Exposing the 8 analog inputs
+back to the PC as a USB recording device is phase 2.
+
 ## Install On A Development SD
 
 Use this for development only. Do not publish a development SD image.

@@ -79,6 +79,15 @@ sudo RASPIAUDIO_HARDWARE=8xin8xout \
 Replace the example option with the real RASPIAUDIO driver option before
 publishing an 8xIN+8xOUT image.
 
+On 8xIN+8xOUT, the local ALSA layout is:
+
+- analog ADC inputs: `hw:CARD=sndrpihifiberry,DEV=1`, 8 channels
+- analog DAC outputs: `hw:CARD=sndrpihifiberry,DEV=0`, 8 channels
+
+The V1 beginner image uses these inputs locally for CamillaDSP monitor/test
+modes. It does not yet expose the 8 analog inputs to the host computer as a USB
+recording device.
+
 ## Image Release
 
 Before publishing, clean the development image:
