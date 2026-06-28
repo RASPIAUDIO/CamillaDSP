@@ -47,6 +47,10 @@ run journal-raspiaudio-web sh -c 'journalctl -u raspiaudio-web.service -n 200 --
 run mode-status sh -c 'raspiaudio-mode status-json 2>/dev/null || true'
 run health sh -c 'raspiaudio-health 2>/dev/null || true'
 run health-json sh -c 'raspiaudio-health --json 2>/dev/null || true'
+if [ "${RASPIAUDIO_SKIP_RELEASE_VALIDATION:-0}" != "1" ]; then
+  run release-validation sh -c 'raspiaudio-validate-release --allow-missing-toslink 2>/dev/null || true'
+  run release-validation-json sh -c 'raspiaudio-validate-release --allow-missing-toslink --json 2>/dev/null || true'
+fi
 
 copy_if_exists /boot/firmware/config.txt boot-firmware-config.txt
 copy_if_exists /boot/config.txt boot-config.txt

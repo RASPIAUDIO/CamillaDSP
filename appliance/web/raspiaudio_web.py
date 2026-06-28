@@ -375,6 +375,7 @@ def render_page():
       <div class="actions">
         <button data-action="restart" class="secondary">Restart audio</button>
         <button data-action="factory-reset" class="secondary">Factory reset audio</button>
+        <button data-action="validate-release" class="secondary">Run release checks</button>
         <a class="button secondary" href="/api/diagnostics">Download diagnostics zip</a>
         <a class="button secondary" href="http://raspiaudio.local:5005/gui/index.html">Advanced CamillaDSP editor</a>
       </div>
@@ -414,6 +415,7 @@ def render_page():
     document.querySelector('[data-action="test-inputs"]').addEventListener('click', () => post('/api/test-inputs', {{}}));
     document.querySelector('[data-action="restart"]').addEventListener('click', () => post('/api/restart-audio', {{}}));
     document.querySelector('[data-action="factory-reset"]').addEventListener('click', () => post('/api/factory-reset', {{}}));
+    document.querySelector('[data-action="validate-release"]').addEventListener('click', () => post('/api/validate-release', {{}}));
   </script>
 </body>
 </html>
@@ -487,6 +489,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/factory-reset":
             result = run_command(["/usr/local/sbin/raspiaudio-mode", "reset"], timeout=30)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/validate-release":
+            result = run_command(["/usr/local/sbin/raspiaudio-validate-release"], timeout=60)
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/test-output":

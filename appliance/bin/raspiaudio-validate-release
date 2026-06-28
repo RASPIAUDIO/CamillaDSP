@@ -1,0 +1,565 @@
+#!/usr/bin/env python3
+import argparse
+import json
+import os
+import pathlib
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import urllib.error
+import urllib.request
+import zipfile
+
+
+MODE_CMD = "/usr/local/sbin/raspiaudio-mode"
+HEALTH_CMD = "/usr/local/sbin/raspiaudio-health"
+DIAGNOSTICS_CMD = "/usr/local/sbin/raspiaudio-diagnostics"
+TEST_AUDIO_CMD = "/usr/local/sbin/raspiaudio-test-audio"
+
+BOOT_CONFIGS = (
+    pathlib.Path("/boot/firmware/config.txt"),
+    pathlib.Path("/boot/config.txt"),
+)
+USB_G_AUDIO_CONFIG = pathlib.Path("/etc/modprobe.d/usb_g_audio.conf")
+MODULES_LOAD_CONFIG = pathlib.Path("/etc/modules-load.d/raspiaudio-usb-audio.conf")
+CURRENT_CONFIG = pathlib.Path("/etc/camilladsp/current.yml")
+BOX_CONFIG = pathlib.Path("/etc/raspiaudio/box.conf")
+
+EXPECTED_MODE = "usb_7_1_to_8out"
+EXPECTED_PROFILE_BASENAME = "usb_gadget_8ch_48k_to_8xout.yml"
+EXPECTED_SAMPLE_RATE = "48000"
+
+
+def run(args, timeout=8, env=None):
+    if not args:
+        return {"returncode": -1, "stdout": "", "stderr": "empty command"}
+    exe = args[0]
+    if "/" not in exe and "\\" not in exe and shutil.which(exe) is None:
+        return {"returncode": 127, "stdout": "", "stderr": f"missing command: {exe}"}
+    if ("/" in exe or "\\" in exe) and not pathlib.Path(exe).exists():
+        return {"returncode": 127, "stdout": "", "stderr": f"missing command: {exe}"}
+    try:
+        completed = subprocess.run(
+            args,
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+            env=env,
+        )
+        return {
+            "returncode": completed.returncode,
+            "stdout": completed.stdout,
+            "stderr": completed.stderr,
+        }
+    except Exception as exc:
+        return {"returncode": -1, "stdout": "", "stderr": str(exc)}
+
+
+def read_text(path):
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except FileNotFoundError:
+        return ""
+    except Exception as exc:
+        return f"read error: {exc}"
+
+
+def first_existing(paths):
+    for path in paths:
+        if path.exists():
+            return path
+    return paths[0]
+
+
+def status_from_bool(ok, warning=False):
+    if ok:
+        return "ok"
+    return "warning" if warning else "fail"
+
+
+def add_check(checks, key, label, status, message, evidence="", action=""):
+    checks.append(
+        {
+            "key": key,
+            "label": label,
+            "status": status,
+            "message": message,
+            "evidence": evidence,
+            "action": action,
+        }
+    )
+
+
+def command_text(args, timeout=8):
+    result = run(args, timeout=timeout)
+    return result["returncode"], (result["stdout"] + result["stderr"]).strip()
+
+
+def service_state(name):
+    code, out = command_text(["systemctl", "is-active", name], timeout=3)
+    state = out.strip() or "unknown"
+    return code == 0 and state == "active", state
+
+
+def systemctl_enabled(name):
+    code, out = command_text(["systemctl", "is-enabled", name], timeout=3)
+    state = out.strip() or "unknown"
+    return code == 0 and state == "enabled", state
+
+
+def load_mode_status():
+    result = run([MODE_CMD, "status-json"], timeout=5)
+    output = (result["stdout"] + result["stderr"]).strip()
+    if result["returncode"] != 0:
+        return None, output
+    try:
+        return json.loads(output), ""
+    except json.JSONDecodeError as exc:
+        return None, f"{exc}: {output}"
+
+
+def load_health_report():
+    result = run([HEALTH_CMD, "--json"], timeout=8)
+    output = (result["stdout"] + result["stderr"]).strip()
+    if result["returncode"] != 0:
+        return None, output
+    try:
+        return json.loads(output), ""
+    except json.JSONDecodeError as exc:
+        return None, f"{exc}: {output}"
+
+
+def get_url(url, timeout=4):
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as response:
+            data = response.read(65536).decode("utf-8", errors="replace")
+            return response.status, data, ""
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read(4096).decode("utf-8", errors="replace"), str(exc)
+    except Exception as exc:
+        return 0, "", str(exc)
+
+
+def find_card(text, pattern):
+    return re.search(pattern, text, flags=re.IGNORECASE) is not None
+
+
+def expected_mode_config_path(status):
+    current = str(status.get("current_config", ""))
+    return pathlib.Path(current).name == EXPECTED_PROFILE_BASENAME
+
+
+def validate_release(args):
+    checks = []
+
+    model = read_text(pathlib.Path("/proc/device-tree/model")).replace("\x00", "").strip()
+    add_check(
+        checks,
+        "pi5_model",
+        "Raspberry Pi 5 hardware",
+        status_from_bool("Raspberry Pi 5" in model),
+        "Running on Raspberry Pi 5." if "Raspberry Pi 5" in model else "This is not detected as a Raspberry Pi 5.",
+        model or "no /proc/device-tree/model",
+        "Flash and validate on a real Raspberry Pi 5.",
+    )
+
+    mode_status, mode_error = load_mode_status()
+    if mode_status:
+        hardware = str(mode_status.get("hardware", "unknown"))
+        active_mode = str(mode_status.get("active_mode", "unknown"))
+        sample_rate = str(mode_status.get("sample_rate", "unknown"))
+
+        add_check(
+            checks,
+            "hardware_mode",
+            "RASPIAUDIO hardware mode",
+            status_from_bool(hardware in ("8xout", "8xin8xout")),
+            f"Hardware mode is {hardware}.",
+            json.dumps(mode_status, sort_keys=True),
+            "Use the dashboard hardware selector or raspiaudio-mode set-hardware.",
+        )
+        add_check(
+            checks,
+            "default_mode",
+            "Default audio mode",
+            status_from_bool(active_mode == args.expected_mode),
+            f"Active mode is {active_mode}.",
+            f"expected {args.expected_mode}",
+            "For a release image, reset to the default mode before publishing.",
+        )
+        add_check(
+            checks,
+            "sample_rate",
+            "48 kHz V1 sample rate",
+            status_from_bool(sample_rate == EXPECTED_SAMPLE_RATE),
+            f"Sample rate is {sample_rate}.",
+            f"expected {EXPECTED_SAMPLE_RATE}",
+            "V1 is fixed at 48 kHz.",
+        )
+        add_check(
+            checks,
+            "current_profile",
+            "Active CamillaDSP profile",
+            status_from_bool(expected_mode_config_path(mode_status)),
+            f"Current profile is {mode_status.get('current_config', '')}.",
+            f"expected basename {EXPECTED_PROFILE_BASENAME}",
+            "Run raspiaudio-mode reset or choose the default dashboard mode.",
+        )
+    else:
+        hardware = "unknown"
+        add_check(
+            checks,
+            "mode_status",
+            "RASPIAUDIO mode status",
+            "fail",
+            "Cannot read raspiaudio-mode status-json.",
+            mode_error,
+            "Check that the appliance files are installed.",
+        )
+
+    for command in (MODE_CMD, HEALTH_CMD, DIAGNOSTICS_CMD, TEST_AUDIO_CMD):
+        path = pathlib.Path(command)
+        add_check(
+            checks,
+            f"command_{path.name}",
+            f"{path.name} installed",
+            status_from_bool(path.exists() and os.access(path, os.X_OK)),
+            f"{command} is installed." if path.exists() else f"{command} is missing.",
+            command,
+            "Re-run appliance/install_appliance.sh.",
+        )
+
+    hostname_code, hostname = command_text(["hostname"], timeout=3)
+    add_check(
+        checks,
+        "hostname",
+        "raspiaudio.local hostname",
+        status_from_bool(hostname_code == 0 and hostname == "raspiaudio"),
+        f"Hostname is {hostname or 'unknown'}.",
+        "expected raspiaudio",
+        "The public image must boot as raspiaudio.local.",
+    )
+
+    boot_config = first_existing(BOOT_CONFIGS)
+    boot_text = read_text(boot_config)
+    add_check(
+        checks,
+        "boot_dwc2",
+        "USB gadget boot overlay",
+        status_from_bool("dtoverlay=dwc2,dr_mode=peripheral" in boot_text),
+        "dwc2 peripheral overlay is configured." if "dtoverlay=dwc2,dr_mode=peripheral" in boot_text else "dwc2 peripheral overlay is missing.",
+        str(boot_config),
+        "Run raspiaudio-mode apply-hardware, then reboot.",
+    )
+    add_check(
+        checks,
+        "boot_dac8x",
+        "RASPIAUDIO audio overlay",
+        status_from_bool("dtoverlay=hifiberry-dac8x" in boot_text),
+        "hifiberry-dac8x overlay is configured." if "dtoverlay=hifiberry-dac8x" in boot_text else "hifiberry-dac8x overlay is missing.",
+        str(boot_config),
+        "Run raspiaudio-mode apply-hardware, then reboot.",
+    )
+
+    usb_config = read_text(USB_G_AUDIO_CONFIG)
+    usb_ok = all(
+        token in usb_config
+        for token in ("c_srate=48000", "c_ssize=4", "c_chmask=0x63f", "p_chmask=0")
+    )
+    add_check(
+        checks,
+        "usb_gadget_profile",
+        "USB Audio Gadget 7.1 48 kHz S32_LE",
+        status_from_bool(usb_ok),
+        "USB gadget profile is 8ch capture / 48 kHz / S32_LE." if usb_ok else "USB gadget profile is not the V1 7.1 profile.",
+        str(USB_G_AUDIO_CONFIG),
+        "Re-run the appliance installer, then reboot.",
+    )
+
+    modules_load = read_text(MODULES_LOAD_CONFIG)
+    add_check(
+        checks,
+        "g_audio_autoload",
+        "USB audio module autoload",
+        status_from_bool("g_audio" in modules_load),
+        "g_audio autoload is configured." if "g_audio" in modules_load else "g_audio autoload is not configured.",
+        str(MODULES_LOAD_CONFIG),
+        "Re-run the USB gadget installer.",
+    )
+
+    for service in ("avahi-daemon", "nginx", "camilladsp.service", "camillagui.service", "raspiaudio-web.service"):
+        ok, state = service_state(service)
+        add_check(
+            checks,
+            f"service_{service.replace('.', '_').replace('-', '_')}",
+            f"{service} active",
+            status_from_bool(ok),
+            f"{service} is {state}.",
+            service,
+            f"Run systemctl status {service} and inspect diagnostics.",
+        )
+
+    for service in ("avahi-daemon", "nginx", "camilladsp.service", "camillagui.service", "raspiaudio-web.service"):
+        ok, state = systemctl_enabled(service)
+        add_check(
+            checks,
+            f"enabled_{service.replace('.', '_').replace('-', '_')}",
+            f"{service} enabled",
+            status_from_bool(ok, warning=True),
+            f"{service} enable state is {state}.",
+            service,
+            f"Run systemctl enable {service}.",
+        )
+
+    status, body, error = get_url("http://127.0.0.1/")
+    dashboard_ok = status == 200 and "RASPIAUDIO CamillaDSP Box" in body
+    add_check(
+        checks,
+        "dashboard_http",
+        "Beginner dashboard reachable",
+        status_from_bool(dashboard_ok),
+        "Dashboard is reachable on local HTTP." if dashboard_ok else "Dashboard is not reachable on local HTTP.",
+        f"HTTP {status}; {error}" if error else f"HTTP {status}",
+        "Check nginx and raspiaudio-web.service.",
+    )
+
+    status, _, error = get_url("http://127.0.0.1:5005/gui/index.html")
+    add_check(
+        checks,
+        "camillagui_http",
+        "Advanced CamillaGUI reachable",
+        status_from_bool(status == 200),
+        "CamillaGUI is reachable on port 5005." if status == 200 else "CamillaGUI is not reachable on port 5005.",
+        f"HTTP {status}; {error}" if error else f"HTTP {status}",
+        "Check camillagui.service.",
+    )
+
+    _, aplay = command_text(["aplay", "-l"], timeout=5)
+    _, arecord = command_text(["arecord", "-l"], timeout=5)
+    _, proc_cards = command_text(["sh", "-c", "cat /proc/asound/cards"], timeout=5)
+    alsa_evidence = "\n".join((proc_cards, aplay, arecord))[-4000:]
+
+    uac2_present = find_card(arecord, r"UAC2Gadget|UAC2_Gadget")
+    add_check(
+        checks,
+        "uac2_capture",
+        "USB device from PC visible to CamillaDSP",
+        status_from_bool(uac2_present),
+        "UAC2Gadget capture card is visible." if uac2_present else "UAC2Gadget capture card is not visible.",
+        alsa_evidence,
+        "Check USB-C data cable/splitter, dwc2 overlay, g_audio and reboot.",
+    )
+
+    analog_out = find_card(aplay, r"sndrpihifiberry|hifiberry|dac8")
+    add_check(
+        checks,
+        "analog_8out",
+        "8 analog output card visible",
+        status_from_bool(analog_out),
+        "RASPIAUDIO analog output card is visible." if analog_out else "RASPIAUDIO analog output card is not visible.",
+        alsa_evidence,
+        "Check HAT seating and dtoverlay=hifiberry-dac8x.",
+    )
+
+    if hardware == "8xin8xout":
+        analog_in = find_card(arecord, r"sndrpihifiberry|hifiberry|dac8")
+        add_check(
+            checks,
+            "analog_8in",
+            "8 analog input card visible",
+            status_from_bool(analog_in),
+            "RASPIAUDIO analog input card is visible." if analog_in else "RASPIAUDIO analog input card is not visible.",
+            alsa_evidence,
+            "Check the 8xIN+8xOUT hardware mode and ADC driver option.",
+        )
+
+    spdif_present = find_card(aplay, r"RASPISPDIF")
+    add_check(
+        checks,
+        "spdif_card",
+        "GPIO12 optical TOSLINK ALSA card",
+        status_from_bool(spdif_present, warning=args.allow_missing_toslink),
+        "RASPISPDIF card is visible." if spdif_present else "RASPISPDIF card is not visible.",
+        alsa_evidence,
+        "Check raspiaudio-spdif-firstboot.service and the kernel module build.",
+    )
+
+    if not args.skip_health:
+        health, health_error = load_health_report()
+        if health:
+            health_errors = [
+                check for check in health.get("checks", []) if check.get("level") == "error"
+            ]
+            health_warnings = [
+                check for check in health.get("checks", []) if check.get("level") == "warning"
+            ]
+            if args.allow_missing_toslink:
+                health_errors = [
+                    check for check in health_errors if check.get("key") != "toslink"
+                ]
+            add_check(
+                checks,
+                "health_report",
+                "Beginner health report",
+                status_from_bool(not health_errors, warning=bool(health_warnings)),
+                f"Health report has {len(health_errors)} errors and {len(health_warnings)} warnings.",
+                json.dumps(health.get("summary", {}), sort_keys=True),
+                "Open the dashboard checks or download diagnostics.",
+            )
+        else:
+            add_check(
+                checks,
+                "health_report",
+                "Beginner health report",
+                "fail",
+                "Cannot run raspiaudio-health --json.",
+                health_error,
+                "Check that raspiaudio-health is installed.",
+            )
+
+    if not args.skip_diagnostics:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            zip_path = pathlib.Path(tmpdir) / "raspiaudio-diagnostics-test.zip"
+            env = os.environ.copy()
+            env["RASPIAUDIO_SKIP_RELEASE_VALIDATION"] = "1"
+            result = run([DIAGNOSTICS_CMD, "--output", str(zip_path)], timeout=45, env=env)
+            zip_ok = result["returncode"] == 0 and zip_path.exists()
+            required_entries_ok = False
+            names = []
+            if zip_ok:
+                try:
+                    with zipfile.ZipFile(zip_path) as zf:
+                        names = zf.namelist()
+                    required_entries_ok = any(name.endswith("health.txt") for name in names) and any(
+                        name.endswith("aplay.txt") for name in names
+                    )
+                except Exception:
+                    required_entries_ok = False
+            add_check(
+                checks,
+                "diagnostics_zip",
+                "Diagnostics zip generation",
+                status_from_bool(zip_ok and required_entries_ok),
+                "Diagnostics zip is generated and contains support data." if zip_ok and required_entries_ok else "Diagnostics zip generation failed or is incomplete.",
+                (result["stdout"] + result["stderr"] + "\n" + "\n".join(names[:20]))[-4000:],
+                "Check raspiaudio-diagnostics.",
+            )
+
+    if args.run_audio_tests:
+        result = run([TEST_AUDIO_CMD, "output", "1"], timeout=25)
+        add_check(
+            checks,
+            "audio_test_out1",
+            "Audio test OUT1",
+            status_from_bool(result["returncode"] == 0),
+            "OUT1 test command completed." if result["returncode"] == 0 else "OUT1 test command failed.",
+            (result["stdout"] + result["stderr"])[-2000:],
+            "Use low volume and inspect ALSA/CamillaDSP logs.",
+        )
+        if spdif_present:
+            result = run([TEST_AUDIO_CMD, "toslink"], timeout=25)
+            add_check(
+                checks,
+                "audio_test_toslink",
+                "Audio test TOSLINK",
+                status_from_bool(result["returncode"] == 0),
+                "TOSLINK test command completed." if result["returncode"] == 0 else "TOSLINK test command failed.",
+                (result["stdout"] + result["stderr"])[-2000:],
+                "Check optical receiver lock and RASPISPDIF logs.",
+            )
+
+    fail_count = sum(1 for check in checks if check["status"] == "fail")
+    warning_count = sum(1 for check in checks if check["status"] == "warning")
+    overall = "pass"
+    if fail_count:
+        overall = "fail"
+    elif warning_count:
+        overall = "pass_with_warnings"
+
+    return {
+        "overall": overall,
+        "summary": {
+            "fail": fail_count,
+            "warning": warning_count,
+            "ok": sum(1 for check in checks if check["status"] == "ok"),
+        },
+        "checks": checks,
+        "manual_checks": [
+            "Confirm the host computer sees RASPIAUDIO_USB_DSP_7_1_48k as an 8-channel / 7.1 / 48 kHz output device.",
+            "Run each dashboard output test at low volume on OUT1 through OUT8.",
+            "For TOSLINK, confirm the optical receiver locks and plays clean audio for at least 10 minutes.",
+            "Power-cycle once and confirm the selected mode persists.",
+        ],
+    }
+
+
+def print_text(report):
+    print(f"RASPIAUDIO release validation: {report['overall']}")
+    print(
+        "Summary: "
+        f"{report['summary']['ok']} ok, "
+        f"{report['summary']['warning']} warning, "
+        f"{report['summary']['fail']} fail"
+    )
+    for check in report["checks"]:
+        marker = check["status"].upper()
+        print(f"[{marker}] {check['label']}: {check['message']}")
+        if check["status"] != "ok" and check.get("action"):
+            print(f"  action: {check['action']}")
+        if check["status"] != "ok" and check.get("evidence"):
+            evidence = str(check["evidence"]).strip().replace("\n", " | ")
+            if evidence:
+                print(f"  evidence: {evidence[:600]}")
+    print("\nManual validation still required:")
+    for item in report["manual_checks"]:
+        print(f"- {item}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Validate a flashed RASPIAUDIO CamillaDSP Box image."
+    )
+    parser.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    parser.add_argument(
+        "--allow-missing-toslink",
+        action="store_true",
+        help="make a missing RASPISPDIF/TOSLINK card a warning instead of a failure",
+    )
+    parser.add_argument(
+        "--expected-mode",
+        default=EXPECTED_MODE,
+        help=f"expected active mode after a fresh flash, default: {EXPECTED_MODE}",
+    )
+    parser.add_argument(
+        "--skip-health",
+        action="store_true",
+        help="skip raspiaudio-health integration check",
+    )
+    parser.add_argument(
+        "--skip-diagnostics",
+        action="store_true",
+        help="skip diagnostics zip generation check",
+    )
+    parser.add_argument(
+        "--run-audio-tests",
+        action="store_true",
+        help="also run short low-level audio test commands; keep amplifier volume low",
+    )
+    args = parser.parse_args()
+
+    report = validate_release(args)
+    if args.json:
+        json.dump(report, sys.stdout, indent=2)
+        print()
+    else:
+        print_text(report)
+
+    return 0 if report["overall"] != "fail" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

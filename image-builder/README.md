@@ -65,6 +65,7 @@ Flash it with Raspberry Pi Imager using `Use Custom`.
 - Beginner dashboard on `http://raspiaudio.local`.
 - Advanced CamillaGUI on port `5005`.
 - Diagnostics zip.
+- Release-candidate validator.
 
 The S/PDIF optical kernel module is built on first boot against the real running
 Pi 5 kernel. This avoids compiling the module against the build host kernel.
@@ -76,13 +77,22 @@ Before publishing an image:
 1. Flash the built image to a fresh SD card.
 2. Boot on Raspberry Pi 5 + RASPIAUDIO 8xOUT.
 3. Open `http://raspiaudio.local`.
-4. Confirm Windows/macOS/Linux sees the USB 7.1 audio device.
-5. Test OUT1 to OUT8.
-6. Test TOSLINK lock on GPIO12.
-7. Power-cycle and confirm the selected mode persists.
-8. Download diagnostics zip and check it contains ALSA, services, boot config,
-   CamillaDSP logs and S/PDIF status.
-9. Repeat output-side validation on 8xIN+8xOUT.
+4. Run:
+
+   ```bash
+   sudo raspiaudio-validate-release
+   ```
+
+   Use `--allow-missing-toslink` only for a lab image where no optical hardware
+   is fitted.
+
+5. Confirm Windows/macOS/Linux sees the USB 7.1 audio device.
+6. Test OUT1 to OUT8 at low volume.
+7. Test TOSLINK lock on GPIO12.
+8. Power-cycle and confirm the selected mode persists.
+9. Download diagnostics zip and check it contains ALSA, services, boot config,
+   CamillaDSP logs, health report and release validation output.
+10. Repeat output-side validation on 8xIN+8xOUT.
 
 Only after this publish:
 

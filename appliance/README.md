@@ -93,6 +93,7 @@ The appliance dashboard exposes:
 - output tests
 - TOSLINK test
 - diagnostics zip
+- release-candidate checks
 - link to the advanced CamillaDSP editor
 
 Advanced CamillaDSP editor:
@@ -142,6 +143,38 @@ This is the beginner support surface. It reports the common first-run failures:
 - CamillaDSP or CamillaGUI service inactive
 
 The diagnostics zip includes both text and JSON health reports.
+
+## Release Validation
+
+After flashing a candidate public image, run:
+
+```bash
+sudo raspiaudio-validate-release
+```
+
+The same check is available from the dashboard with `Run release checks`.
+
+It verifies the appliance-level requirements that can be proven from the Pi:
+
+- Raspberry Pi 5 model.
+- `raspiaudio.local` hostname and mDNS services.
+- USB gadget and RASPIAUDIO audio boot overlays.
+- USB Audio Gadget 7.1 / 48 kHz / S32_LE profile.
+- CamillaDSP, CamillaGUI, nginx and dashboard services.
+- Local dashboard and CamillaGUI HTTP endpoints.
+- UAC2Gadget, RASPIAUDIO analog output and optional analog input ALSA cards.
+- GPIO12 `RASPISPDIF` optical ALSA card.
+- Default CamillaDSP profile after a fresh flash.
+- Diagnostics zip generation.
+
+If no optical hardware is fitted during a lab check, use:
+
+```bash
+sudo raspiaudio-validate-release --allow-missing-toslink
+```
+
+Manual checks are still required for host OS detection, real sound on all eight
+outputs, optical receiver lock, and power-cycle mode persistence.
 
 ## Long-Term Release Path
 

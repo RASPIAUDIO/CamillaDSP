@@ -51,6 +51,7 @@ The appliance installer adds:
 - Advanced CamillaGUI on port 5005.
 - Mode switcher through `/etc/camilladsp/current.yml`.
 - Diagnostics zip generator.
+- Release-candidate validator.
 - Beginner health checks for USB gadget, analog output card, TOSLINK, services
   and `raspiaudio.local`.
 
@@ -141,17 +142,37 @@ Linux details belong in the advanced documentation, not in the first tutorial.
 
 Before publishing a beta image:
 
-- Fresh flash on a new SD card.
-- Boot on Raspberry Pi 5 + 8xOUT.
-- `http://raspiaudio.local` opens.
-- USB 7.1 device appears on Windows.
-- Output tests work on OUT1 to OUT8.
-- TOSLINK mode locks a receiver on GPIO12.
-- Reboot keeps the selected mode.
-- Diagnostics zip downloads and contains ALSA, services, logs and boot config.
-- Dashboard health checks are green except optional TOSLINK when no optical
-  hardware is fitted.
-- Repeat on 8xIN+8xOUT with ADC mode enabled.
+1. Fresh flash on a new SD card.
+2. Boot on Raspberry Pi 5 + 8xOUT.
+3. Open `http://raspiaudio.local`.
+4. Run the automatic release checks from the dashboard, or from a shell:
+
+   ```bash
+   sudo raspiaudio-validate-release
+   ```
+
+   If the image being checked has no optical hardware fitted yet:
+
+   ```bash
+   sudo raspiaudio-validate-release --allow-missing-toslink
+   ```
+
+   The validator checks the Pi 5 model, hostname, boot overlays, USB gadget
+   profile, services, dashboard, CamillaGUI, ALSA cards, active default profile,
+   health report, diagnostics zip generation, and TOSLINK driver presence.
+
+5. Confirm Windows/macOS/Linux sees the USB device as an 8-channel / 7.1 /
+   48 kHz output.
+6. Run the dashboard output tests on OUT1 to OUT8 at low volume.
+7. TOSLINK mode: confirm the GPIO12 optical receiver locks and plays clean audio
+   for at least 10 minutes.
+8. Power-cycle and confirm the selected mode persists.
+9. Download the diagnostics zip and keep it with the release notes.
+10. Repeat output-side validation on 8xIN+8xOUT with ADC mode enabled.
+
+The command is intentionally not the whole release proof. Host OS detection,
+real analog sound on every output, receiver lock, and power-cycle persistence
+are still manual product checks.
 
 ## Future Production Build
 
