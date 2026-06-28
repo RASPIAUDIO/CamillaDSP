@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE_DIR="${RASPIAUDIO_SPDIF_SOURCE_DIR:-/opt/raspiaudio-spdif-gpio}"
+KERNEL_DIR="${SOURCE_DIR}/kernel"
+MODULE_NAME="raspiaudio_spdif_pio"
+MODULE_PATH="/lib/modules/$(uname -r)/extra/${MODULE_NAME}.ko"
+GPIO="${SPDIF_GPIO:-12}"
+DRIVE_MA="${SPDIF_DRIVE_MA:-8}"
+ZERO_ON_UNDERRUN="${SPDIF_ZERO_ON_UNDERRUN:-1}"
+STAMP="/etc/raspiaudio/spdif-driver-installed"
+
+if [ "$(id -u)" -ne 0 ]; then
+  exec sudo -E bash "$0" "$@"
+fi
+
+if [ ! -f "$KERNEL_DIR/${MODULE_NAME}.c" ]; then
+  echo "Missing S/PDIF kernel source: $KERNEL_DIR/${MODULE_NAME}.c" >&2
+  exit 1
+fi
+
+KDIR="${KDIR:-/lib/modules/$(uname -r)/build}"
+if [ ! -d "$KDIR" ]; then
+  echo "Missing kernel build directory: $KDIR" >&2
+  echo "Install raspberrypi-kernel-headers for the running kernel." >&2
+  exit 1
+fi
+
+make -C "$KDIR" M="$KERNEL_DIR" modules
+install -D -m 0644 "$KERNEL_DIR/${MODULE_NAME}.ko" "$MODULE_PATH"
+
+cat >/etc/modprobe.d/raspiaudio-spdif.conf <<EOF
+options ${MODULE_NAME} gpio=${GPIO} drive_ma=${DRIVE_MA} zero_on_underrun=${ZERO_ON_UNDERRUN}
+EOF
+
+cat >/etc/modules-load.d/raspiaudio-spdif.conf <<EOF
+rp1-pio
+${MODULE_NAME}
+EOF
+
+depmod
+
+if [ "${RASPIAUDIO_IMAGE_BUILD:-0}" != "1" ]; then
+  modprobe rp1-pio || true
+  modprobe -r "$MODULE_NAME" 2>/dev/null || true
+  modprobe "$MODULE_NAME" gpio="$GPIO" drive_ma="$DRIVE_MA" zero_on_underrun="$ZERO_ON_UNDERRUN" || true
+fi
+
+install -d -m 0755 /etc/raspiaudio
+date -Is >"$STAMP"
+
+systemctl disable raspiaudio-spdif-firstboot.service >/dev/null 2>&1 || true
+
+echo "Installed ${MODULE_NAME} for kernel $(uname -r) on GPIO${GPIO}."

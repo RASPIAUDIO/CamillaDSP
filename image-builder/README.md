@@ -1,0 +1,98 @@
+# RASPIAUDIO Image Builder
+
+This folder is the reproducible image path for:
+
+```text
+RASPIAUDIO CamillaDSP Box for Raspberry Pi 5
+```
+
+It uses Raspberry Pi `rpi-image-gen` instead of cloning a hand-prepared SD card.
+Raspberry Pi documents this tool in:
+
+- https://github.com/raspberrypi/rpi-image-gen
+- https://github.com/raspberrypi/rpi-image-gen/blob/master/getting_started.adoc
+
+The first public beta can still be made from a cleaned master SD card, but this
+builder is the preferred production path.
+
+## Build Host
+
+Use a Raspberry Pi 5 or another Raspberry Pi running 64-bit Raspberry Pi OS.
+This avoids cross-architecture issues when downloading and validating the
+CamillaDSP binaries.
+
+Install `rpi-image-gen` once:
+
+```bash
+git clone https://github.com/raspberrypi/rpi-image-gen.git ~/rpi-image-gen
+cd ~/rpi-image-gen
+sudo ./install_deps.sh
+```
+
+## Build
+
+From this repo:
+
+```bash
+cd ~/CamillaDSP
+./image-builder/build_image.sh
+```
+
+If `rpi-image-gen` is elsewhere:
+
+```bash
+RPI_IMAGE_GEN_DIR=/path/to/rpi-image-gen ./image-builder/build_image.sh
+```
+
+The generated image is written by `rpi-image-gen` under its `work/` directory.
+The expected image name starts with:
+
+```text
+raspiaudio-dspbox-pi5
+```
+
+Flash it with Raspberry Pi Imager using `Use Custom`.
+
+## What The Image Contains
+
+- Raspberry Pi OS Lite 64-bit base.
+- Hostname: `raspiaudio`.
+- CamillaDSP and CamillaGUI.
+- RASPIAUDIO USB Audio Gadget 7.1 / 8 channel / 48 kHz / S32_LE.
+- RASPIAUDIO 8xOUT and 8xIN+8xOUT output-side profiles.
+- Active crossover preset.
+- Optical TOSLINK profiles.
+- Beginner dashboard on `http://raspiaudio.local`.
+- Advanced CamillaGUI on port `5005`.
+- Diagnostics zip.
+
+The S/PDIF optical kernel module is built on first boot against the real running
+Pi 5 kernel. This avoids compiling the module against the build host kernel.
+
+## Public Release Checklist
+
+Before publishing an image:
+
+1. Flash the built image to a fresh SD card.
+2. Boot on Raspberry Pi 5 + RASPIAUDIO 8xOUT.
+3. Open `http://raspiaudio.local`.
+4. Confirm Windows/macOS/Linux sees the USB 7.1 audio device.
+5. Test OUT1 to OUT8.
+6. Test TOSLINK lock on GPIO12.
+7. Power-cycle and confirm the selected mode persists.
+8. Download diagnostics zip and check it contains ALSA, services, boot config,
+   CamillaDSP logs and S/PDIF status.
+9. Repeat output-side validation on 8xIN+8xOUT.
+
+Only after this publish:
+
+```text
+raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz
+raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz.sha256
+```
+
+## Raspberry Pi Imager Repository
+
+`raspiaudio-imager-repository.example.json` is a starter template for a custom
+Raspberry Pi Imager repository. Do not publish it until the URL, SHA256, image
+size and release notes match a validated image.

@@ -8,7 +8,11 @@ fi
 
 echo "Preparing RASPIAUDIO appliance image for release..."
 
-systemctl stop camilladsp.service camillagui.service raspiaudio-web.service nginx 2>/dev/null || true
+IMAGE_BUILD="${RASPIAUDIO_IMAGE_BUILD:-0}"
+
+if [ "$IMAGE_BUILD" != "1" ]; then
+  systemctl stop camilladsp.service camillagui.service raspiaudio-web.service nginx 2>/dev/null || true
+fi
 
 rm -rf /tmp/*
 rm -rf /var/tmp/*
@@ -38,7 +42,10 @@ EOF
 
 /usr/local/sbin/raspiaudio-mode set usb_7_1_to_8out || true
 systemctl disable ssh 2>/dev/null || true
-systemctl enable avahi-daemon nginx camilladsp.service camillagui.service raspiaudio-web.service >/dev/null
+systemctl enable avahi-daemon nginx camilladsp.service camillagui.service raspiaudio-web.service >/dev/null 2>&1 || true
+if [ -f /etc/systemd/system/raspiaudio-spdif-firstboot.service ]; then
+  systemctl enable raspiaudio-spdif-firstboot.service >/dev/null 2>&1 || true
+fi
 
 sync
 

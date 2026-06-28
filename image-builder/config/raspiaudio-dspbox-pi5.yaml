@@ -1,0 +1,29 @@
+device:
+  layer: rpi5
+  hostname: raspiaudio
+
+image:
+  layer: image-rpios
+  boot_part_size: 256M
+  root_part_size: 8192M
+  name: raspiaudio-dspbox-pi5
+  compression: xz
+
+layer:
+  base: bookworm-minbase
+
+packages:
+  - alsa-utils
+  - avahi-daemon
+  - build-essential
+  - ca-certificates
+  - curl
+  - ffmpeg
+  - git
+  - kmod
+  - nginx
+  - python3
+  - raspberrypi-kernel-headers
+  - tar
+  - wget
+  - zip

@@ -7,6 +7,8 @@ For a beginner-friendly product image, use the appliance path:
 `Flash image -> boot -> open http://raspiaudio.local -> choose mode -> test audio`.
 See [docs/appliance_image.md](docs/appliance_image.md).
 
+Reproducible image-builder files live in [image-builder](image-builder/).
+
 ```mermaid
 flowchart LR
   Computer["Windows / macOS / Linux<br/>music player, REW, DAW"]

@@ -1,0 +1,13 @@
+[Unit]
+Description=Build RASPIAUDIO Pi 5 S/PDIF optical driver on first boot
+ConditionPathExists=/opt/raspiaudio-spdif-gpio/kernel/raspiaudio_spdif_pio.c
+ConditionPathExists=!/etc/raspiaudio/spdif-driver-installed
+After=local-fs.target
+Before=camilladsp.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/raspiaudio-install-spdif-driver
+
+[Install]
+WantedBy=multi-user.target

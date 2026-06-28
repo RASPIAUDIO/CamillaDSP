@@ -1,0 +1,20 @@
+{
+  "os_list": [
+    {
+      "name": "RASPIAUDIO CamillaDSP Box",
+      "description": "Open miniDSP-style appliance for Raspberry Pi 5 and RASPIAUDIO 8xOUT / 8xIN+8xOUT. USB 7.1 audio, CamillaDSP, 8 analog outputs and optional TOSLINK.",
+      "icon": "https://raspiaudio.com/wp-content/uploads/2025/raspiaudio-icon.png",
+      "website": "https://github.com/RASPIAUDIO/CamillaDSP",
+      "subitems_url": "",
+      "release_date": "2026-06-28",
+      "extract_size": 0,
+      "extract_sha256": "REPLACE_WITH_UNCOMPRESSED_IMAGE_SHA256",
+      "image_download_size": 0,
+      "image_download_sha256": "REPLACE_WITH_IMG_XZ_SHA256",
+      "url": "https://example.com/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz",
+      "devices": [
+        "pi5-64bit"
+      ]
+    }
+  ]
+}

@@ -153,5 +153,28 @@ Before publishing a beta image:
 
 The first beta can be a cleaned master SD image.
 
-The production image should be built with Raspberry Pi `rpi-image-gen`, so the
-image is reproducible and does not depend on manual SD-card cloning.
+The reproducible production path is now under:
+
+```text
+image-builder/
+```
+
+Build on a Raspberry Pi OS 64-bit host with:
+
+```bash
+git clone https://github.com/raspberrypi/rpi-image-gen.git ~/rpi-image-gen
+cd ~/rpi-image-gen
+sudo ./install_deps.sh
+
+cd ~/CamillaDSP
+./image-builder/build_image.sh
+```
+
+The builder uses:
+
+- `image-builder/config/raspiaudio-dspbox-pi5.yaml`
+- `image-builder/bdebstrap/customize90-raspiaudio-appliance`
+- the current repo packaged into `image-builder/source/raspiaudio-camilladsp.tar`
+
+The generated image must still pass the validation checklist above before it is
+published as a beta or release image.

@@ -282,6 +282,7 @@ def render_page():
       <h2>Support</h2>
       <div class="actions">
         <button data-action="restart" class="secondary">Restart audio</button>
+        <button data-action="factory-reset" class="secondary">Factory reset audio</button>
         <a class="button secondary" href="/api/diagnostics">Download diagnostics zip</a>
         <a class="button secondary" href="http://raspiaudio.local:5005/gui/index.html">Advanced CamillaDSP editor</a>
       </div>
@@ -304,7 +305,7 @@ def render_page():
         body = json.output || JSON.stringify(json, null, 2);
       }} catch (e) {{}}
       log.textContent = body || 'Done.';
-      if (res.ok && (path.includes('/mode') || path.includes('/hardware'))) {{
+      if (res.ok && (path.includes('/mode') || path.includes('/hardware') || path.includes('/factory-reset'))) {{
         setTimeout(() => window.location.reload(), 900);
       }}
     }}
@@ -320,6 +321,7 @@ def render_page():
     document.querySelector('[data-action="test-toslink"]').addEventListener('click', () => post('/api/test-toslink', {{}}));
     document.querySelector('[data-action="test-inputs"]').addEventListener('click', () => post('/api/test-inputs', {{}}));
     document.querySelector('[data-action="restart"]').addEventListener('click', () => post('/api/restart-audio', {{}}));
+    document.querySelector('[data-action="factory-reset"]').addEventListener('click', () => post('/api/factory-reset', {{}}));
   </script>
 </body>
 </html>
@@ -386,6 +388,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/restart-audio":
             result = run_command(["systemctl", "restart", "camilladsp.service"], timeout=30)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/factory-reset":
+            result = run_command(["/usr/local/sbin/raspiaudio-mode", "reset"], timeout=30)
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/test-output":

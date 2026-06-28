@@ -1,0 +1,23 @@
+#!/bin/bash
+set -eu
+
+ROOTFS="$1"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+SOURCE_ARCHIVE="$PROJECT_DIR/source/raspiaudio-camilladsp.tar"
+TARGET_DIR="/opt/raspiaudio-camilladsp"
+
+if [ ! -f "$SOURCE_ARCHIVE" ]; then
+  echo "Missing source archive: $SOURCE_ARCHIVE" >&2
+  echo "Run image-builder/build_image.sh instead of calling rpi-image-gen directly." >&2
+  exit 1
+fi
+
+install -d -m 0755 "$ROOTFS$TARGET_DIR"
+tar -C "$ROOTFS$TARGET_DIR" -xf "$SOURCE_ARCHIVE"
+
+chroot "$ROOTFS" /bin/bash -lc \
+  "cd $TARGET_DIR && RASPIAUDIO_IMAGE_BUILD=1 INSTALL_SPDIF_DRIVER=defer REBOOT_NOW=0 ./appliance/install_appliance.sh"
+
+chroot "$ROOTFS" /bin/bash -lc \
+  "cd $TARGET_DIR && RASPIAUDIO_IMAGE_BUILD=1 ./appliance/release/prepare_release_image.sh"

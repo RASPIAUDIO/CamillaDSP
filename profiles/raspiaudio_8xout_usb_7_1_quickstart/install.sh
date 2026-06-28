@@ -14,6 +14,7 @@ OUTPUT_DEVICE="${OUTPUT_DEVICE:-}"
 AUDIO_OVERLAY="${AUDIO_OVERLAY:-hifiberry-dac8x}"
 RASPIAUDIO_AUDIO_DEVICE="${RASPIAUDIO_AUDIO_DEVICE:-hw:CARD=sndrpihifiberry,DEV=0}"
 BOOT_CONFIG="${BOOT_CONFIG:-/boot/firmware/config.txt}"
+IMAGE_BUILD="${RASPIAUDIO_IMAGE_BUILD:-0}"
 
 if [ "$(id -u)" -ne 0 ]; then
   exec sudo -E bash "$0" "$@"
@@ -39,6 +40,23 @@ STATEFILE="/var/lib/camilladsp/statefile.yml"
 LOG_FILE="/var/log/camilladsp/camilladsp.log"
 CURRENT_CONFIG="$CONFIG_DIR/raspiaudio_usb_7_1_48k_passthrough.yml"
 BACKUP_DIR="/root/raspiaudio-camilladsp-backups/quickstart-$(date +%Y%m%d-%H%M%S)"
+
+systemctl_reload() {
+  [ "$IMAGE_BUILD" = "1" ] && return 0
+  systemctl daemon-reload
+}
+
+systemctl_enable() {
+  systemctl enable "$@" >/dev/null 2>&1 || {
+    [ "$IMAGE_BUILD" = "1" ] && return 0
+    return 1
+  }
+}
+
+systemctl_restart() {
+  [ "$IMAGE_BUILD" = "1" ] && return 0
+  systemctl restart "$@" || true
+}
 
 download() {
   local url="$1"
@@ -338,8 +356,8 @@ RestartSec=3
 [Install]
 WantedBy=multi-user.target
 EOF
-  systemctl daemon-reload
-  systemctl enable camilladsp.service >/dev/null
+  systemctl_reload
+  systemctl_enable camilladsp.service
 }
 
 install_camillagui() {
@@ -409,16 +427,18 @@ RestartSec=3
 [Install]
 WantedBy=multi-user.target
 EOF
-  systemctl daemon-reload
-  systemctl enable camillagui.service >/dev/null
+  systemctl_reload
+  systemctl_enable camillagui.service
 }
 
 finish_services() {
   usermod -aG audio "$TARGET_USER" || true
-  systemctl disable --now raspiaudio-radio.service raspiaudio-radio-boot.service >/dev/null 2>&1 || true
-  systemctl restart camilladsp.service || true
+  if [ "$IMAGE_BUILD" != "1" ]; then
+    systemctl disable --now raspiaudio-radio.service raspiaudio-radio-boot.service >/dev/null 2>&1 || true
+  fi
+  systemctl_restart camilladsp.service
   if [ "$INSTALL_GUI" = "1" ]; then
-    systemctl restart camillagui.service || true
+    systemctl_restart camillagui.service
   fi
 }
 

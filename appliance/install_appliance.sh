@@ -14,15 +14,38 @@ SAMPLE_RATE="${RASPIAUDIO_SAMPLE_RATE:-48000}"
 ADC_DRIVER_OPTION="${RASPIAUDIO_ADC_DRIVER_OPTION:-}"
 INSTALL_SPDIF_DRIVER="${INSTALL_SPDIF_DRIVER:-1}"
 REBOOT_NOW="${REBOOT_NOW:-0}"
+IMAGE_BUILD="${RASPIAUDIO_IMAGE_BUILD:-0}"
+
+systemctl_enable() {
+  systemctl enable "$@" >/dev/null 2>&1 || {
+    if [ "$IMAGE_BUILD" = "1" ]; then
+      echo "Warning: systemctl enable failed in image build context: $*" >&2
+      return 0
+    fi
+    return 1
+  }
+}
+
+systemctl_daemon_reload() {
+  [ "$IMAGE_BUILD" = "1" ] && return 0
+  systemctl daemon-reload
+}
+
+systemctl_restart() {
+  [ "$IMAGE_BUILD" = "1" ] && return 0
+  systemctl restart "$@" || true
+}
 
 install_packages() {
   export DEBIAN_FRONTEND=noninteractive
   apt-get update
   apt-get install -y \
     avahi-daemon \
+    build-essential \
     ca-certificates \
     curl \
     git \
+    kmod \
     nginx \
     python3 \
     raspberrypi-kernel-headers \
@@ -54,13 +77,25 @@ install_profiles() {
 }
 
 install_spdif_driver() {
-  [ "$INSTALL_SPDIF_DRIVER" = "1" ] || return 0
+  [ "$INSTALL_SPDIF_DRIVER" = "0" ] && return 0
+  install -d -m 0755 /opt/raspiaudio-spdif-gpio
+  cp -a "$REPO_DIR/prototypes/pi5_spdif_gpio/kernel" /opt/raspiaudio-spdif-gpio/
+  install -m 0755 "$SCRIPT_DIR/bin/raspiaudio-install-spdif-driver" /usr/local/sbin/raspiaudio-install-spdif-driver
+  install -m 0644 "$SCRIPT_DIR/systemd/raspiaudio-spdif-firstboot.service" /etc/systemd/system/raspiaudio-spdif-firstboot.service
+
+  if [ "$IMAGE_BUILD" = "1" ] || [ "$INSTALL_SPDIF_DRIVER" = "defer" ]; then
+    systemctl_enable raspiaudio-spdif-firstboot.service
+    return 0
+  fi
+
   if [ -d /sys/firmware/devicetree/base ] && command -v uname >/dev/null 2>&1; then
-    "$REPO_DIR/prototypes/pi5_spdif_gpio/scripts/install_kernel_spdif_on_pi5.sh" || {
+    /usr/local/sbin/raspiaudio-install-spdif-driver || {
       echo "Warning: S/PDIF driver install failed; optical mode can be installed later." >&2
+      systemctl_enable raspiaudio-spdif-firstboot.service
     }
   else
-    echo "Skipping S/PDIF driver install outside a running Raspberry Pi system."
+    echo "Deferring S/PDIF driver install until first Raspberry Pi boot."
+    systemctl_enable raspiaudio-spdif-firstboot.service
   fi
 }
 
@@ -89,12 +124,19 @@ install_services() {
   install -m 0644 "$SCRIPT_DIR/nginx/raspiaudio.conf" /etc/nginx/sites-available/raspiaudio.conf
   ln -sfn /etc/nginx/sites-available/raspiaudio.conf /etc/nginx/sites-enabled/raspiaudio.conf
 
-  systemctl daemon-reload
-  systemctl enable avahi-daemon nginx camilladsp.service camillagui.service raspiaudio-web.service >/dev/null
+  systemctl_daemon_reload
+  systemctl_enable avahi-daemon nginx camilladsp.service camillagui.service raspiaudio-web.service
 }
 
 configure_hostname() {
-  hostnamectl set-hostname raspiaudio || true
+  if [ "$IMAGE_BUILD" = "1" ]; then
+    printf 'raspiaudio\n' >/etc/hostname
+    if [ -f /etc/hosts ]; then
+      sed -i 's/127\.0\.1\.1.*/127.0.1.1\traspiaudio/' /etc/hosts || true
+    fi
+  else
+    hostnamectl set-hostname raspiaudio || true
+  fi
 }
 
 activate_default_mode() {
@@ -103,11 +145,11 @@ activate_default_mode() {
 }
 
 restart_services() {
-  systemctl restart avahi-daemon || true
-  systemctl restart nginx || true
-  systemctl restart camilladsp.service || true
-  systemctl restart camillagui.service || true
-  systemctl restart raspiaudio-web.service || true
+  systemctl_restart avahi-daemon
+  systemctl_restart nginx
+  systemctl_restart camilladsp.service
+  systemctl_restart camillagui.service
+  systemctl_restart raspiaudio-web.service
 }
 
 print_summary() {

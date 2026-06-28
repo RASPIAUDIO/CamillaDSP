@@ -125,6 +125,11 @@ matching SHA256 file.
 
 The quick beta path is a cleaned master SD image.
 
-The production path should be reproducible image generation with Raspberry Pi
-`rpi-image-gen`, so every release is built from source instead of manually cloned
-from a lab SD card.
+The reproducible production path is in:
+
+```text
+image-builder/
+```
+
+It uses Raspberry Pi `rpi-image-gen` so every release can be built from source
+instead of manually cloned from a lab SD card.
