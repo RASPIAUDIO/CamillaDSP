@@ -27,7 +27,10 @@ if [ "$IMAGE_BUILD" != "1" ]; then
 fi
 
 if [ "$IMAGE_BUILD" = "1" ]; then
-  find /tmp -mindepth 1 -maxdepth 1 ! -name bdebstrap-output -exec rm -rf {} +
+  find /tmp -mindepth 1 -maxdepth 1 \
+    ! -name bdebstrap-output \
+    ! -name 'mmdebstrap.*' \
+    -exec rm -rf {} +
 else
   rm -rf /tmp/*
 fi
