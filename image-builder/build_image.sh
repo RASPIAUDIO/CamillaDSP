@@ -8,6 +8,7 @@ CONFIG="${RPI_IMAGE_GEN_CONFIG:-$SCRIPT_DIR/config/raspiaudio-dspbox-pi5.yaml}"
 SOURCE_DIR="$SCRIPT_DIR/source"
 SOURCE_ARCHIVE="$SOURCE_DIR/raspiaudio-camilladsp.tar"
 IMAGE_NAME="${RASPIAUDIO_IMAGE_NAME:-raspiaudio-dspbox-pi5}"
+RELEASE_VERSION="${RASPIAUDIO_RELEASE_VERSION:-$(date +%Y.%m.%d)}"
 CREATE_XZ="${CREATE_XZ:-1}"
 XZ_PRESET="${XZ_PRESET:--6}"
 
@@ -63,7 +64,7 @@ cd "$RPI_IMAGE_GEN_DIR"
 ARTEFACT_VERSION="$(git -C "$RPI_IMAGE_GEN_DIR" describe --tags --always --dirty 2>/dev/null || date +%Y-%m-%d)"
 DEPLOY_DIR="$RPI_IMAGE_GEN_DIR/work/deploy-$ARTEFACT_VERSION"
 RAW_IMAGE="$RPI_IMAGE_GEN_DIR/work/image-$IMAGE_NAME/$IMAGE_NAME.img"
-XZ_IMAGE="$DEPLOY_DIR/$IMAGE_NAME-$ARTEFACT_VERSION.img.xz"
+XZ_IMAGE="$DEPLOY_DIR/$IMAGE_NAME-$RELEASE_VERSION.img.xz"
 
 if [ "$CREATE_XZ" != "0" ]; then
   if [ ! -f "$RAW_IMAGE" ]; then
@@ -78,9 +79,9 @@ if [ "$CREATE_XZ" != "0" ]; then
   echo "Creating Raspberry Pi Imager artefact:"
   echo "  $XZ_IMAGE"
   xz -T0 "$XZ_PRESET" -c "$RAW_IMAGE" >"$XZ_IMAGE"
-  sha256sum "$XZ_IMAGE" >"$XZ_IMAGE.sha256"
+  (cd "$DEPLOY_DIR" && sha256sum "$(basename "$XZ_IMAGE")" >"$(basename "$XZ_IMAGE").sha256")
   if [ -f "$DEPLOY_DIR/$IMAGE_NAME.img.zst" ]; then
-    sha256sum "$DEPLOY_DIR/$IMAGE_NAME.img.zst" >"$DEPLOY_DIR/$IMAGE_NAME.img.zst.sha256"
+    (cd "$DEPLOY_DIR" && sha256sum "$IMAGE_NAME.img.zst" >"$IMAGE_NAME.img.zst.sha256")
   fi
 fi
 

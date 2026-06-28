@@ -195,6 +195,9 @@ cd ~/CamillaDSP
 ./image-builder/build_image.sh
 ```
 
+Set `RASPIAUDIO_RELEASE_VERSION=YYYY.MM.DD` when you want an exact public
+filename.
+
 The builder uses:
 
 - `image-builder/config/raspiaudio-dspbox-pi5.yaml`
@@ -204,8 +207,8 @@ The builder uses:
 The RASPIAUDIO wrapper creates the publishable Raspberry Pi Imager artefact in:
 
 ```text
-~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-*.img.xz
-~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-*.img.xz.sha256
+~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz
+~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz.sha256
 ```
 
 The generated image must still pass the validation checklist above before it is
