@@ -15,6 +15,22 @@ sha256: 6a806d6a9c8a4a2c654b6c13996405f5f19f021b6ee3e1753d8b32186b7a7ac3
 The `.img.xz` archive was checked with `xz -t` on the build Pi and the copied
 Windows artefact matched the same SHA256.
 
+A Raspberry Pi Imager repository JSON was also generated from the real `.img.xz`
+and raw `.img` files:
+
+```text
+raspiaudio-imager-repository-2026.06.28.json
+image_download_size: 353623360
+image_download_sha256: 6a806d6a9c8a4a2c654b6c13996405f5f19f021b6ee3e1753d8b32186b7a7ac3
+extract_size: 8866758656
+extract_sha256: a949cb7a8c6b2d736c0822d08bf8c043221b8abf809ec50d2a2205e30af7178f
+init_format: none
+```
+
+The repository JSON is a candidate file only until the `.img.xz` has been
+uploaded to the public URL declared in the JSON and the fresh-flash checklist
+passes.
+
 ## Offline Image Audit
 
 The generated root filesystem was inspected before flashing. It contains:
@@ -52,6 +68,7 @@ python -m py_compile appliance/web/raspiaudio_web.py
 python -m py_compile appliance/bin/raspiaudio-health
 python -m py_compile appliance/bin/raspiaudio-validate-release
 PyYAML parse of all configs/*.yml: 15 files
+Raspberry Pi Imager repository generator smoke test with a small .img.xz
 ```
 
 ## Live Lab Hardware Proof Already Obtained
@@ -104,4 +121,3 @@ image to a microSD card:
 
 As of this validation note, no removable SD card target was visible on the
 Windows host. Do not write the image to any fixed NVMe/SATA disk.
-

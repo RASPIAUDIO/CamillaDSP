@@ -50,6 +50,15 @@ To pin the public release filename:
 RASPIAUDIO_RELEASE_VERSION=2026.06.28 ./image-builder/build_image.sh
 ```
 
+To also generate a Raspberry Pi Imager custom repository JSON, pass the public
+base URL where the `.img.xz` will be hosted:
+
+```bash
+RASPIAUDIO_RELEASE_VERSION=2026.06.28 \
+RASPIAUDIO_IMAGE_BASE_URL=https://raspiaudio.com/downloads \
+./image-builder/build_image.sh
+```
+
 `rpi-image-gen` writes its raw and `.zst` artefacts under its `work/`
 directory. The RASPIAUDIO wrapper also creates a Raspberry Pi Imager-friendly
 file:
@@ -57,6 +66,7 @@ file:
 ```text
 ~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz
 ~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz.sha256
+~/rpi-image-gen/work/deploy-*/raspiaudio-imager-repository-YYYY.MM.DD.json
 ```
 
 Flash the `.img.xz` with Raspberry Pi Imager using `Use Custom`.
@@ -120,3 +130,19 @@ raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz.sha256
 `raspiaudio-imager-repository.example.json` is a starter template for a custom
 Raspberry Pi Imager repository. Do not publish it until the URL, SHA256, image
 size and release notes match a validated image.
+
+The safer production path is to generate it from the release artefact:
+
+```bash
+python3 image-builder/generate_imager_repository.py \
+  --image ~/rpi-image-gen/work/deploy-v2.7.0/raspiaudio-dspbox-pi5-2026.06.28.img.xz \
+  --raw-image ~/rpi-image-gen/work/image-raspiaudio-dspbox-pi5/raspiaudio-dspbox-pi5.img \
+  --url https://raspiaudio.com/downloads/raspiaudio-dspbox-pi5-2026.06.28.img.xz \
+  --output ~/rpi-image-gen/work/deploy-v2.7.0/raspiaudio-imager-repository-2026.06.28.json \
+  --release-date 2026-06-28
+```
+
+The generator fills `image_download_size`, `image_download_sha256`,
+`extract_size` and `extract_sha256` from the actual files. It sets
+`init_format` to `none` by default because Raspberry Pi Imager first-boot
+customization has not yet been validated for this appliance image.

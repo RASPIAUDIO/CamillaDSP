@@ -11,6 +11,8 @@ IMAGE_NAME="${RASPIAUDIO_IMAGE_NAME:-raspiaudio-dspbox-pi5}"
 RELEASE_VERSION="${RASPIAUDIO_RELEASE_VERSION:-$(date +%Y.%m.%d)}"
 CREATE_XZ="${CREATE_XZ:-1}"
 XZ_PRESET="${XZ_PRESET:--6}"
+IMAGE_BASE_URL="${RASPIAUDIO_IMAGE_BASE_URL:-}"
+RELEASE_DATE="${RASPIAUDIO_RELEASE_DATE:-$(date +%F)}"
 
 if [ "${PREPARE_ONLY:-0}" != "1" ] && [ ! -x "$RPI_IMAGE_GEN_DIR/rpi-image-gen" ]; then
   cat >&2 <<EOF
@@ -82,6 +84,18 @@ if [ "$CREATE_XZ" != "0" ]; then
   (cd "$DEPLOY_DIR" && sha256sum "$(basename "$XZ_IMAGE")" >"$(basename "$XZ_IMAGE").sha256")
   if [ -f "$DEPLOY_DIR/$IMAGE_NAME.img.zst" ]; then
     (cd "$DEPLOY_DIR" && sha256sum "$IMAGE_NAME.img.zst" >"$IMAGE_NAME.img.zst.sha256")
+  fi
+  if [ -n "$IMAGE_BASE_URL" ]; then
+    IMAGE_URL="${IMAGE_BASE_URL%/}/$(basename "$XZ_IMAGE")"
+    REPOSITORY_JSON="$DEPLOY_DIR/raspiaudio-imager-repository-$RELEASE_VERSION.json"
+    echo "Creating Raspberry Pi Imager repository JSON:"
+    echo "  $REPOSITORY_JSON"
+    python3 "$SCRIPT_DIR/generate_imager_repository.py" \
+      --image "$XZ_IMAGE" \
+      --raw-image "$RAW_IMAGE" \
+      --url "$IMAGE_URL" \
+      --output "$REPOSITORY_JSON" \
+      --release-date "$RELEASE_DATE"
   fi
 fi
 

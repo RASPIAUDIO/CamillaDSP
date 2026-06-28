@@ -209,7 +209,12 @@ The RASPIAUDIO wrapper creates the publishable Raspberry Pi Imager artefact in:
 ```text
 ~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz
 ~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz.sha256
+~/rpi-image-gen/work/deploy-*/raspiaudio-imager-repository-YYYY.MM.DD.json
 ```
+
+The Imager repository JSON is only generated when
+`RASPIAUDIO_IMAGE_BASE_URL` is set. Publish it only after the exact image has
+passed the fresh-flash validation checklist.
 
 The generated image must still pass the validation checklist above before it is
 published as a beta or release image. Use `CREATE_XZ=0` only for faster local
