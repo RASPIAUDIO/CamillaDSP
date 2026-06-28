@@ -1,0 +1,33 @@
+# METABEGIN
+# X-Env-Layer-Name: raspiaudio-appliance
+# X-Env-Layer-Category: audio
+# X-Env-Layer-Desc: RASPIAUDIO CamillaDSP Box appliance customisation.
+# X-Env-Layer-Version: 1.0.0
+# X-Env-VarPrefix: raspiaudio
+#
+# X-Env-Var-source_dir: ${DIRECTORY}/..
+# X-Env-Var-source_dir-Desc: RASPIAUDIO image-builder source directory.
+# X-Env-Var-source_dir-Required: n
+# X-Env-Var-source_dir-Valid: dir
+# X-Env-Var-source_dir-Set: y
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - alsa-utils
+    - avahi-daemon
+    - build-essential
+    - ca-certificates
+    - curl
+    - ffmpeg
+    - git
+    - gzip
+    - kmod
+    - nginx
+    - python3
+    - raspberrypi-kernel-headers
+    - tar
+    - wget
+    - zip
+  customize-hooks:
+    - $IGconf_raspiaudio_source_dir/bdebstrap/customize90-raspiaudio-appliance "$1"

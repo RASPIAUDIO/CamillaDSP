@@ -11,19 +11,4 @@ image:
 
 layer:
   base: bookworm-minbase
-
-packages:
-  - alsa-utils
-  - avahi-daemon
-  - build-essential
-  - ca-certificates
-  - curl
-  - ffmpeg
-  - git
-  - kmod
-  - nginx
-  - python3
-  - raspberrypi-kernel-headers
-  - tar
-  - wget
-  - zip
+  custom: raspiaudio-appliance
