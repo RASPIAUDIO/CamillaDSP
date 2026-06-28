@@ -10,6 +10,18 @@ echo "Preparing RASPIAUDIO appliance image for release..."
 
 IMAGE_BUILD="${RASPIAUDIO_IMAGE_BUILD:-0}"
 
+set_local_hostname_files() {
+  local name="$1"
+  printf '%s\n' "$name" >/etc/hostname
+  if [ -f /etc/hosts ]; then
+    if grep -qE '^127\.0\.1\.1[[:space:]]+' /etc/hosts; then
+      sed -i -E "s/^127\.0\.1\.1[[:space:]].*/127.0.1.1\t${name}/" /etc/hosts
+    else
+      printf '127.0.1.1\t%s\n' "$name" >>/etc/hosts
+    fi
+  fi
+}
+
 if [ "$IMAGE_BUILD" != "1" ]; then
   systemctl stop camilladsp.service camillagui.service raspiaudio-web.service nginx 2>/dev/null || true
 fi
@@ -30,6 +42,7 @@ ln -sf /etc/machine-id /var/lib/dbus/machine-id
 
 rm -f /etc/wpa_supplicant/wpa_supplicant.conf 2>/dev/null || true
 rm -rf /var/lib/NetworkManager/* 2>/dev/null || true
+set_local_hostname_files raspiaudio
 
 cat >/etc/raspiaudio/box.conf <<'EOF'
 hardware=8xout

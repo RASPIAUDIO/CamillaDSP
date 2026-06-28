@@ -36,6 +36,18 @@ systemctl_restart() {
   systemctl restart "$@" || true
 }
 
+set_local_hostname_files() {
+  local name="$1"
+  printf '%s\n' "$name" >/etc/hostname
+  if [ -f /etc/hosts ]; then
+    if grep -qE '^127\.0\.1\.1[[:space:]]+' /etc/hosts; then
+      sed -i -E "s/^127\.0\.1\.1[[:space:]].*/127.0.1.1\t${name}/" /etc/hosts
+    else
+      printf '127.0.1.1\t%s\n' "$name" >>/etc/hosts
+    fi
+  fi
+}
+
 install_packages() {
   export DEBIAN_FRONTEND=noninteractive
   apt-get update
@@ -131,12 +143,8 @@ install_services() {
 }
 
 configure_hostname() {
-  if [ "$IMAGE_BUILD" = "1" ]; then
-    printf 'raspiaudio\n' >/etc/hostname
-    if [ -f /etc/hosts ]; then
-      sed -i 's/127\.0\.1\.1.*/127.0.1.1\traspiaudio/' /etc/hosts || true
-    fi
-  else
+  set_local_hostname_files raspiaudio
+  if [ "$IMAGE_BUILD" != "1" ]; then
     hostnamectl set-hostname raspiaudio || true
   fi
 }

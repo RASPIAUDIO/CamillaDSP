@@ -244,6 +244,17 @@ def validate_release(args):
         "The public image must boot as raspiaudio.local.",
     )
 
+    getent_code, getent_out = command_text(["getent", "hosts", "raspiaudio"], timeout=3)
+    add_check(
+        checks,
+        "hostname_resolves",
+        "Local hostname resolves",
+        status_from_bool(getent_code == 0 and "raspiaudio" in getent_out),
+        "raspiaudio resolves locally." if getent_code == 0 and "raspiaudio" in getent_out else "raspiaudio does not resolve locally.",
+        getent_out or "no getent hosts raspiaudio result",
+        "Ensure /etc/hosts has a 127.0.1.1 raspiaudio entry.",
+    )
+
     boot_config = first_existing(BOOT_CONFIGS)
     boot_text = read_text(boot_config)
     add_check(
