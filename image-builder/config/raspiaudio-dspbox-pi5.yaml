@@ -7,7 +7,6 @@ image:
   boot_part_size: 256M
   root_part_size: 8192M
   name: raspiaudio-dspbox-pi5
-  compression: xz
 
 layer:
   base: bookworm-minbase

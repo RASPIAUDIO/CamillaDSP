@@ -44,14 +44,22 @@ If `rpi-image-gen` is elsewhere:
 RPI_IMAGE_GEN_DIR=/path/to/rpi-image-gen ./image-builder/build_image.sh
 ```
 
-The generated image is written by `rpi-image-gen` under its `work/` directory.
-The expected image name starts with:
+`rpi-image-gen` writes its raw and `.zst` artefacts under its `work/`
+directory. The RASPIAUDIO wrapper also creates a Raspberry Pi Imager-friendly
+file:
 
 ```text
-raspiaudio-dspbox-pi5
+~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-*.img.xz
+~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-*.img.xz.sha256
 ```
 
-Flash it with Raspberry Pi Imager using `Use Custom`.
+Flash the `.img.xz` with Raspberry Pi Imager using `Use Custom`.
+
+For a faster lab build without the `.img.xz` conversion:
+
+```bash
+CREATE_XZ=0 ./image-builder/build_image.sh
+```
 
 ## What The Image Contains
 

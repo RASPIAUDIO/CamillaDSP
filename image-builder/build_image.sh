@@ -7,6 +7,9 @@ RPI_IMAGE_GEN_DIR="${RPI_IMAGE_GEN_DIR:-$HOME/rpi-image-gen}"
 CONFIG="${RPI_IMAGE_GEN_CONFIG:-$SCRIPT_DIR/config/raspiaudio-dspbox-pi5.yaml}"
 SOURCE_DIR="$SCRIPT_DIR/source"
 SOURCE_ARCHIVE="$SOURCE_DIR/raspiaudio-camilladsp.tar"
+IMAGE_NAME="${RASPIAUDIO_IMAGE_NAME:-raspiaudio-dspbox-pi5}"
+CREATE_XZ="${CREATE_XZ:-1}"
+XZ_PRESET="${XZ_PRESET:--6}"
 
 if [ "${PREPARE_ONLY:-0}" != "1" ] && [ ! -x "$RPI_IMAGE_GEN_DIR/rpi-image-gen" ]; then
   cat >&2 <<EOF
@@ -57,13 +60,34 @@ echo "Building image with rpi-image-gen..."
 cd "$RPI_IMAGE_GEN_DIR"
 ./rpi-image-gen build -S "$SCRIPT_DIR" -c "$CONFIG"
 
+ARTEFACT_VERSION="$(git -C "$RPI_IMAGE_GEN_DIR" describe --tags --always --dirty 2>/dev/null || date +%Y-%m-%d)"
+DEPLOY_DIR="$RPI_IMAGE_GEN_DIR/work/deploy-$ARTEFACT_VERSION"
+RAW_IMAGE="$RPI_IMAGE_GEN_DIR/work/image-$IMAGE_NAME/$IMAGE_NAME.img"
+XZ_IMAGE="$DEPLOY_DIR/$IMAGE_NAME-$ARTEFACT_VERSION.img.xz"
+
+if [ "$CREATE_XZ" != "0" ]; then
+  if [ ! -f "$RAW_IMAGE" ]; then
+    echo "Cannot create .img.xz; raw image was not found: $RAW_IMAGE" >&2
+    exit 1
+  fi
+  command -v xz >/dev/null 2>&1 || {
+    echo "Cannot create .img.xz; install xz-utils first." >&2
+    exit 1
+  }
+  install -d -m 0755 "$DEPLOY_DIR"
+  echo "Creating Raspberry Pi Imager artefact:"
+  echo "  $XZ_IMAGE"
+  xz -T0 "$XZ_PRESET" -c "$RAW_IMAGE" >"$XZ_IMAGE"
+  sha256sum "$XZ_IMAGE" >"$XZ_IMAGE.sha256"
+  if [ -f "$DEPLOY_DIR/$IMAGE_NAME.img.zst" ]; then
+    sha256sum "$DEPLOY_DIR/$IMAGE_NAME.img.zst" >"$DEPLOY_DIR/$IMAGE_NAME.img.zst.sha256"
+  fi
+fi
+
 cat <<EOF
 
 Build finished.
 
-Look under:
-  $RPI_IMAGE_GEN_DIR/work/
-
-for an image named:
-  raspiaudio-dspbox-pi5*.img*
+Release artefacts:
+  $DEPLOY_DIR/
 EOF

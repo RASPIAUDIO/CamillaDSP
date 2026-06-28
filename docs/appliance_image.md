@@ -201,5 +201,13 @@ The builder uses:
 - `image-builder/bdebstrap/customize90-raspiaudio-appliance`
 - the current repo packaged into `image-builder/source/raspiaudio-camilladsp.tar`
 
+The RASPIAUDIO wrapper creates the publishable Raspberry Pi Imager artefact in:
+
+```text
+~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-*.img.xz
+~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-*.img.xz.sha256
+```
+
 The generated image must still pass the validation checklist above before it is
-published as a beta or release image.
+published as a beta or release image. Use `CREATE_XZ=0` only for faster local
+lab builds where a release artefact is not needed.
