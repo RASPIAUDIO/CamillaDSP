@@ -1,0 +1,260 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONFIG_FILE="${RASPIAUDIO_BOX_CONFIG:-/etc/raspiaudio/box.conf}"
+CAMILLA_CONFIG_DIR="${CAMILLA_CONFIG_DIR:-/etc/camilladsp}"
+CURRENT_CONFIG="${CURRENT_CONFIG:-$CAMILLA_CONFIG_DIR/current.yml}"
+BOOT_CONFIG="${BOOT_CONFIG:-/boot/firmware/config.txt}"
+
+DEFAULT_HARDWARE="8xout"
+DEFAULT_MODE="usb_7_1_to_8out"
+DEFAULT_SAMPLE_RATE="48000"
+
+hardware="$DEFAULT_HARDWARE"
+active_mode="$DEFAULT_MODE"
+sample_rate="$DEFAULT_SAMPLE_RATE"
+adc_driver_option=""
+
+load_config() {
+  if [ -f "$CONFIG_FILE" ]; then
+    # shellcheck disable=SC1090
+    . "$CONFIG_FILE"
+  fi
+  hardware="${hardware:-$DEFAULT_HARDWARE}"
+  active_mode="${active_mode:-$DEFAULT_MODE}"
+  sample_rate="${sample_rate:-$DEFAULT_SAMPLE_RATE}"
+  adc_driver_option="${adc_driver_option:-}"
+}
+
+write_config() {
+  install -d -m 0755 "$(dirname "$CONFIG_FILE")"
+  cat >"$CONFIG_FILE" <<EOF
+hardware=${hardware}
+active_mode=${active_mode}
+sample_rate=${sample_rate}
+# Optional driver option used by the RASPIAUDIO 8xIN+8xOUT kernel overlay
+# to enable the ADC path. Leave empty for 8xOUT-only images.
+adc_driver_option=${adc_driver_option}
+EOF
+}
+
+mode_config() {
+  case "$1" in
+    usb_7_1_to_8out)
+      echo "$CAMILLA_CONFIG_DIR/usb_gadget_8ch_48k_to_8xout.yml"
+      ;;
+    toslink_stereo)
+      echo "$CAMILLA_CONFIG_DIR/usb_gadget_8ch_48k_front_lr_to_spdif_optical_stereo.yml"
+      ;;
+    toslink_stereo_fir)
+      echo "$CAMILLA_CONFIG_DIR/usb_gadget_8ch_48k_front_lr_to_spdif_optical_stereo_fir_load.yml"
+      ;;
+    active_crossover_3way)
+      echo "$CAMILLA_CONFIG_DIR/stereo_3way_dual_subs_48k_8xout.yml"
+      ;;
+    analog_input_monitor)
+      echo "$CAMILLA_CONFIG_DIR/8xin8xout_physical_passthrough.yml"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+mode_label() {
+  case "$1" in
+    usb_7_1_to_8out) echo "PC USB 7.1 to 8 analog outputs" ;;
+    toslink_stereo) echo "PC USB front L/R to optical TOSLINK stereo" ;;
+    toslink_stereo_fir) echo "PC USB front L/R to optical TOSLINK stereo with FIR load" ;;
+    active_crossover_3way) echo "Stereo active crossover to 8 analog outputs" ;;
+    analog_input_monitor) echo "8 analog inputs monitor/test" ;;
+    *) echo "$1" ;;
+  esac
+}
+
+require_root() {
+  if [ "$(id -u)" -ne 0 ]; then
+    echo "Run with sudo." >&2
+    exit 1
+  fi
+}
+
+ensure_boot_overlay() {
+  [ -f "$BOOT_CONFIG" ] || BOOT_CONFIG="/boot/config.txt"
+  [ -f "$BOOT_CONFIG" ] || return 0
+
+  python3 - "$BOOT_CONFIG" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+out = []
+inserted = False
+for line in lines:
+    stripped = line.strip()
+    if stripped.startswith("otg_mode=1"):
+        out.append("#" + line + " # disabled for RASPIAUDIO USB audio gadget")
+        continue
+    if stripped.startswith("dtoverlay=dwc2") or stripped.startswith("#dtoverlay=dwc2"):
+        out.append("#" + line.lstrip("#") + " # disabled duplicate/stale by RASPIAUDIO")
+        continue
+    if stripped.startswith("dtoverlay=hifiberry-dac8x"):
+        out.append("#" + line + " # disabled duplicate/stale by RASPIAUDIO")
+        continue
+    out.append(line)
+    if stripped == "[all]" and not inserted:
+        out.append("dtoverlay=dwc2,dr_mode=peripheral # RASPIAUDIO USB audio gadget")
+        out.append("dtoverlay=hifiberry-dac8x # RASPIAUDIO 8xOUT / 8xIN+8xOUT audio")
+        inserted = True
+
+if not inserted:
+    out.append("[all]")
+    out.append("dtoverlay=dwc2,dr_mode=peripheral # RASPIAUDIO USB audio gadget")
+    out.append("dtoverlay=hifiberry-dac8x # RASPIAUDIO 8xOUT / 8xIN+8xOUT audio")
+
+path.write_text("\n".join(out) + "\n", encoding="utf-8")
+PY
+}
+
+apply_hardware() {
+  ensure_boot_overlay
+  install -d -m 0755 /etc/modprobe.d
+  cat >/etc/modprobe.d/raspiaudio-card.conf <<EOF
+# RASPIAUDIO appliance hardware mode.
+# Both 8xOUT and 8xIN+8xOUT use dtoverlay=hifiberry-dac8x.
+# 8xIN+8xOUT enables the ADC path through the board-specific driver option below.
+EOF
+  if [ "$hardware" = "8xin8xout" ] && [ -n "$adc_driver_option" ]; then
+    printf '%s\n' "$adc_driver_option" >>/etc/modprobe.d/raspiaudio-card.conf
+  fi
+}
+
+set_mode() {
+  local mode="$1"
+  local target
+  target="$(mode_config "$mode")" || {
+    echo "Unknown mode: $mode" >&2
+    exit 1
+  }
+  if [ ! -f "$target" ]; then
+    echo "Missing CamillaDSP profile for $mode: $target" >&2
+    exit 1
+  fi
+  install -d -m 0775 "$CAMILLA_CONFIG_DIR"
+  ln -sfn "$target" "$CURRENT_CONFIG"
+  active_mode="$mode"
+  write_config
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl restart camilladsp.service || true
+  fi
+  echo "Active mode: $(mode_label "$mode")"
+}
+
+set_hardware() {
+  case "$1" in
+    8xout|8xin8xout)
+      hardware="$1"
+      ;;
+    *)
+      echo "Unknown hardware: $1" >&2
+      echo "Use 8xout or 8xin8xout." >&2
+      exit 1
+      ;;
+  esac
+  write_config
+  apply_hardware
+  echo "Hardware mode: $hardware"
+  echo "Reboot required after changing hardware mode."
+}
+
+json_escape() {
+  python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().strip()))'
+}
+
+status_json() {
+  local current_target=""
+  local camilla_state="unknown"
+  local gui_state="unknown"
+  local spdif_present="false"
+  if [ -L "$CURRENT_CONFIG" ] || [ -f "$CURRENT_CONFIG" ]; then
+    current_target="$(readlink -f "$CURRENT_CONFIG" 2>/dev/null || echo "$CURRENT_CONFIG")"
+  fi
+  if command -v systemctl >/dev/null 2>&1; then
+    camilla_state="$(systemctl is-active camilladsp.service 2>/dev/null || true)"
+    gui_state="$(systemctl is-active camillagui.service 2>/dev/null || true)"
+  fi
+  if command -v aplay >/dev/null 2>&1 && aplay -l 2>/dev/null | grep -q RASPISPDIF; then
+    spdif_present="true"
+  fi
+  cat <<EOF
+{
+  "hardware": $(printf '%s' "$hardware" | json_escape),
+  "active_mode": $(printf '%s' "$active_mode" | json_escape),
+  "active_mode_label": $(mode_label "$active_mode" | json_escape),
+  "sample_rate": $(printf '%s' "$sample_rate" | json_escape),
+  "current_config": $(printf '%s' "$current_target" | json_escape),
+  "camilladsp": $(printf '%s' "$camilla_state" | json_escape),
+  "camillagui": $(printf '%s' "$gui_state" | json_escape),
+  "spdif_present": $spdif_present
+}
+EOF
+}
+
+list_modes() {
+  for mode in usb_7_1_to_8out toslink_stereo toslink_stereo_fir active_crossover_3way analog_input_monitor; do
+    printf '%s\t%s\t%s\n' "$mode" "$(mode_label "$mode")" "$(mode_config "$mode" || true)"
+  done
+}
+
+usage() {
+  cat <<'EOF'
+Usage:
+  raspiaudio-mode status
+  raspiaudio-mode status-json
+  raspiaudio-mode list
+  raspiaudio-mode set <mode>
+  raspiaudio-mode set-hardware <8xout|8xin8xout>
+  raspiaudio-mode apply-hardware
+
+Modes:
+  usb_7_1_to_8out
+  toslink_stereo
+  toslink_stereo_fir
+  active_crossover_3way
+  analog_input_monitor
+EOF
+}
+
+load_config
+
+case "${1:-}" in
+  status)
+    echo "Hardware: $hardware"
+    echo "Active mode: $active_mode ($(mode_label "$active_mode"))"
+    echo "Sample rate: $sample_rate"
+    echo "Current config: $(readlink -f "$CURRENT_CONFIG" 2>/dev/null || echo "$CURRENT_CONFIG")"
+    ;;
+  status-json)
+    status_json
+    ;;
+  list)
+    list_modes
+    ;;
+  set)
+    require_root
+    set_mode "${2:-}"
+    ;;
+  set-hardware)
+    require_root
+    set_hardware "${2:-}"
+    ;;
+  apply-hardware)
+    require_root
+    apply_hardware
+    ;;
+  *)
+    usage
+    [ -n "${1:-}" ] && exit 1 || exit 0
+    ;;
+esac

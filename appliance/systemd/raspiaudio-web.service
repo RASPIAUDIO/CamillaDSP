@@ -1,0 +1,15 @@
+[Unit]
+Description=RASPIAUDIO CamillaDSP Box web dashboard
+After=network-online.target camilladsp.service camillagui.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/bin/python3 /opt/raspiaudio-web/raspiaudio_web.py --host 127.0.0.1 --port 8080
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ANALOG_DEVICE="${RASPIAUDIO_ANALOG_DEVICE:-hw:CARD=sndrpihifiberry,DEV=0}"
+ADC_DEVICE="${RASPIAUDIO_ADC_DEVICE:-hw:CARD=sndrpihifiberry,DEV=1}"
+SPDIF_DEVICE="${RASPIAUDIO_SPDIF_DEVICE:-hw:CARD=RASPISPDIF,DEV=0}"
+SECONDS="${RASPIAUDIO_TEST_SECONDS:-2}"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  raspiaudio-test-audio output <1-8>
+  raspiaudio-test-audio toslink
+  raspiaudio-test-audio inputs
+EOF
+}
+
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "Missing command: $1" >&2
+    exit 1
+  }
+}
+
+test_output() {
+  local ch="$1"
+  case "$ch" in
+    1|2|3|4|5|6|7|8) ;;
+    *) echo "Output channel must be 1..8." >&2; exit 1 ;;
+  esac
+  need_cmd speaker-test
+  speaker-test -D "$ANALOG_DEVICE" -c 8 -r 48000 -F S32_LE -t sine -f 1000 -s "$ch" -l 1
+}
+
+test_toslink() {
+  need_cmd speaker-test
+  speaker-test -D "$SPDIF_DEVICE" -c 2 -r 48000 -F S16_LE -t sine -f 1000 -l 1
+}
+
+test_inputs() {
+  need_cmd arecord
+  local out="/tmp/raspiaudio-input-test.wav"
+  arecord -D "$ADC_DEVICE" -f S32_LE -r 48000 -c 8 -d "$SECONDS" "$out"
+  echo "$out"
+}
+
+case "${1:-}" in
+  output)
+    test_output "${2:-}"
+    ;;
+  toslink)
+    test_toslink
+    ;;
+  inputs)
+    test_inputs
+    ;;
+  *)
+    usage
+    [ -n "${1:-}" ] && exit 1 || exit 0
+    ;;
+esac

@@ -3,6 +3,10 @@
 Turn a Raspberry Pi 5 into a USB 7.1 sound card with 8 analog outputs for
 active speakers, DSP crossovers, EQ, gain, delay, and phase/time alignment.
 
+For a beginner-friendly product image, use the appliance path:
+`Flash image -> boot -> open http://raspiaudio.local -> choose mode -> test audio`.
+See [docs/appliance_image.md](docs/appliance_image.md).
+
 ```mermaid
 flowchart LR
   Computer["Windows / macOS / Linux<br/>music player, REW, DAW"]
@@ -58,6 +62,10 @@ The same software path also works with the output side of the RASPIAUDIO
 8xIN+8xOUT.
 
 ## Install
+
+For normal GitHub/manual installation, use the steps below. For the flashable
+product-image workflow, read [docs/appliance_image.md](docs/appliance_image.md)
+and [appliance/README.md](appliance/README.md).
 
 1. Flash the Raspberry Pi
    - Install [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
@@ -169,3 +177,4 @@ Read the preset guide before connecting amplifiers and tweeters:
 - 8-channel USB input example: [docs/usb_gadget_8ch_to_8xout.md](docs/usb_gadget_8ch_to_8xout.md)
 - Raspberry Pi 5 GPIO S/PDIF OUT guide: [prototypes/pi5_spdif_gpio/README.md](prototypes/pi5_spdif_gpio/README.md)
 - USB stereo to optical S/PDIF profile: [docs/usb_gadget_2ch_to_spdif_optical.md](docs/usb_gadget_2ch_to_spdif_optical.md)
+- Flashable appliance image workflow: [docs/appliance_image.md](docs/appliance_image.md)

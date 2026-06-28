@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+OUT=""
+if [ "${1:-}" = "--output" ]; then
+  OUT="${2:-}"
+fi
+
+STAMP="$(date +%Y%m%d-%H%M%S)"
+WORK="$(mktemp -d)"
+REPORT="$WORK/raspiaudio-diagnostics-$STAMP"
+mkdir -p "$REPORT"
+
+run() {
+  local name="$1"
+  shift
+  {
+    echo "$ $*"
+    "$@" 2>&1 || true
+  } >"$REPORT/$name.txt"
+}
+
+copy_if_exists() {
+  local src="$1"
+  local name="$2"
+  if [ -e "$src" ]; then
+    cp -a "$src" "$REPORT/$name" 2>/dev/null || true
+  fi
+}
+
+run uname uname -a
+run os-release sh -c 'cat /etc/os-release'
+run hostname hostnamectl
+run ip ip addr
+run aplay aplay -l
+run arecord arecord -l
+run proc-asound-cards sh -c 'cat /proc/asound/cards'
+run proc-asound-devices sh -c 'cat /proc/asound/devices'
+run lsmod lsmod
+run usb-gadget sh -c 'ls -R /sys/kernel/config/usb_gadget 2>/dev/null || true'
+run udc sh -c 'ls -l /sys/class/udc 2>/dev/null || true'
+run dmesg-audio sh -c "dmesg | grep -i -E 'raspiaudio|camilla|snd|alsa|spdif|toslink|uac|g_audio|dwc2|hifiberry|xrun|underrun|error' || true"
+run services sh -c 'systemctl --no-pager --plain status camilladsp.service camillagui.service raspiaudio-web.service nginx avahi-daemon 2>&1 || true'
+run journal-camilladsp sh -c 'journalctl -u camilladsp.service -n 300 --no-pager 2>&1 || true'
+run journal-camillagui sh -c 'journalctl -u camillagui.service -n 200 --no-pager 2>&1 || true'
+run journal-raspiaudio-web sh -c 'journalctl -u raspiaudio-web.service -n 200 --no-pager 2>&1 || true'
+run mode-status sh -c 'raspiaudio-mode status-json 2>/dev/null || true'
+
+copy_if_exists /boot/firmware/config.txt boot-firmware-config.txt
+copy_if_exists /boot/config.txt boot-config.txt
+copy_if_exists /etc/raspiaudio/box.conf box.conf
+copy_if_exists /etc/modprobe.d/usb_g_audio.conf usb_g_audio.conf
+copy_if_exists /etc/modprobe.d/raspiaudio-card.conf raspiaudio-card.conf
+copy_if_exists /etc/modules-load.d/raspiaudio-usb-audio.conf raspiaudio-usb-audio.conf
+copy_if_exists /etc/camilladsp/current.yml camilladsp-current.yml
+copy_if_exists /var/log/camilladsp/camilladsp.log camilladsp.log
+
+mkdir -p "$REPORT/etc-camilladsp"
+cp -a /etc/camilladsp/*.yml "$REPORT/etc-camilladsp/" 2>/dev/null || true
+
+cat >"$REPORT/README.txt" <<EOF
+RASPIAUDIO diagnostics bundle
+Generated: $STAMP
+
+Send this zip when asking for support. It contains audio device lists,
+boot overlay state, CamillaDSP logs, RASPIAUDIO mode state, and service logs.
+It should not contain Wi-Fi passwords, but review before sharing publicly.
+EOF
+
+if [ -z "$OUT" ]; then
+  install -d -m 0755 /var/log/raspiaudio
+  OUT="/var/log/raspiaudio/raspiaudio-diagnostics-$STAMP.zip"
+fi
+
+mkdir -p "$(dirname "$OUT")"
+if command -v zip >/dev/null 2>&1; then
+  (cd "$WORK" && zip -qr "$OUT" "$(basename "$REPORT")")
+else
+  python3 - "$WORK" "$REPORT" "$OUT" <<'PY'
+import pathlib
+import sys
+import zipfile
+
+root = pathlib.Path(sys.argv[1])
+report = pathlib.Path(sys.argv[2])
+out = pathlib.Path(sys.argv[3])
+with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+    for path in report.rglob("*"):
+        if path.is_file():
+            zf.write(path, path.relative_to(root))
+PY
+fi
+
+rm -rf "$WORK"
+echo "$OUT"

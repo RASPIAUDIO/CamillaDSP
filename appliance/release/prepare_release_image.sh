@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "Run with sudo on the Pi before imaging the SD card." >&2
+  exit 1
+fi
+
+echo "Preparing RASPIAUDIO appliance image for release..."
+
+systemctl stop camilladsp.service camillagui.service raspiaudio-web.service nginx 2>/dev/null || true
+
+rm -rf /tmp/*
+rm -rf /var/tmp/*
+rm -rf /var/log/*.gz /var/log/*.[0-9] /var/log/journal/* 2>/dev/null || true
+find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true
+
+rm -f /root/.bash_history /home/*/.bash_history 2>/dev/null || true
+rm -rf /root/.ssh /home/*/.ssh 2>/dev/null || true
+rm -f /etc/ssh/ssh_host_* 2>/dev/null || true
+
+rm -f /etc/machine-id
+touch /etc/machine-id
+rm -f /var/lib/dbus/machine-id
+ln -sf /etc/machine-id /var/lib/dbus/machine-id
+
+rm -f /etc/wpa_supplicant/wpa_supplicant.conf 2>/dev/null || true
+rm -rf /var/lib/NetworkManager/* 2>/dev/null || true
+
+cat >/etc/raspiaudio/box.conf <<'EOF'
+hardware=8xout
+active_mode=usb_7_1_to_8out
+sample_rate=48000
+# For 8xIN+8xOUT images, set this to the exact driver option that enables ADC
+# input loading in the hifiberry-dac8x based RASPIAUDIO overlay.
+adc_driver_option=
+EOF
+
+/usr/local/sbin/raspiaudio-mode set usb_7_1_to_8out || true
+systemctl disable ssh 2>/dev/null || true
+systemctl enable avahi-daemon nginx camilladsp.service camillagui.service raspiaudio-web.service >/dev/null
+
+sync
+
+cat <<'EOF'
+Release cleanup complete.
+
+Now shut down the Pi:
+  sudo poweroff
+
+Then image the SD card from your PC and compress it as:
+  raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz
+
+Publish it with a matching SHA256 file.
+EOF

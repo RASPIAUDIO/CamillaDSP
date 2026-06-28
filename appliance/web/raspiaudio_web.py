@@ -1,0 +1,422 @@
+#!/usr/bin/env python3
+import argparse
+import html
+import json
+import os
+import pathlib
+import subprocess
+import tempfile
+import urllib.parse
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+
+MODES = [
+    {
+        "id": "usb_7_1_to_8out",
+        "title": "PC USB 7.1 to 8 analog outputs",
+        "body": "Default safe passthrough. Use this first to prove every output.",
+    },
+    {
+        "id": "toslink_stereo",
+        "title": "PC USB front L/R to optical TOSLINK stereo",
+        "body": "Routes the USB front left/right channels to the Pi 5 GPIO12 optical output.",
+    },
+    {
+        "id": "active_crossover_3way",
+        "title": "Stereo active crossover to 8 outputs",
+        "body": "Open miniDSP-style preset with safe gain, crossover, PEQ and delay placeholders.",
+    },
+    {
+        "id": "analog_input_monitor",
+        "title": "8 analog inputs monitor/test",
+        "body": "For RASPIAUDIO 8xIN+8xOUT only. Routes ADC inputs to analog outputs for lab checks.",
+    },
+]
+
+HARDWARE = [
+    ("8xout", "RASPIAUDIO 8xOUT"),
+    ("8xin8xout", "RASPIAUDIO 8xIN+8xOUT"),
+]
+
+
+def run_command(args, timeout=20):
+    try:
+        completed = subprocess.run(
+            args,
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=timeout,
+        )
+        return {
+            "ok": completed.returncode == 0,
+            "returncode": completed.returncode,
+            "output": completed.stdout[-8000:],
+        }
+    except Exception as exc:
+        return {"ok": False, "returncode": -1, "output": str(exc)}
+
+
+def load_status():
+    result = run_command(["/usr/local/sbin/raspiaudio-mode", "status-json"], timeout=5)
+    if not result["ok"]:
+        return {
+            "hardware": "unknown",
+            "active_mode": "unknown",
+            "active_mode_label": "Unknown",
+            "sample_rate": "48000",
+            "current_config": "",
+            "camilladsp": "unknown",
+            "camillagui": "unknown",
+            "spdif_present": False,
+            "error": result["output"],
+        }
+    try:
+        return json.loads(result["output"])
+    except json.JSONDecodeError:
+        return {"error": result["output"]}
+
+
+def read_body(handler):
+    length = int(handler.headers.get("Content-Length", "0") or "0")
+    raw = handler.rfile.read(length).decode("utf-8", errors="replace")
+    ctype = handler.headers.get("Content-Type", "")
+    if "application/json" in ctype:
+        return json.loads(raw or "{}")
+    parsed = urllib.parse.parse_qs(raw)
+    return {key: values[-1] for key, values in parsed.items()}
+
+
+def render_page():
+    status = load_status()
+    active = status.get("active_mode", "")
+    hardware = status.get("hardware", "")
+    camilla = status.get("camilladsp", "unknown")
+    spdif = "present" if status.get("spdif_present") else "not detected"
+
+    hardware_buttons = []
+    for value, label in HARDWARE:
+        selected = " selected" if value == hardware else ""
+        hardware_buttons.append(
+            f"""
+            <button class="pill{selected}" data-hardware="{html.escape(value)}">{html.escape(label)}</button>
+            """
+        )
+
+    mode_cards = []
+    for mode in MODES:
+        selected = " selected" if mode["id"] == active else ""
+        mode_cards.append(
+            f"""
+            <article class="card{selected}">
+              <h3>{html.escape(mode["title"])}</h3>
+              <p>{html.escape(mode["body"])}</p>
+              <button data-mode="{html.escape(mode["id"])}">Choose mode</button>
+            </article>
+            """
+        )
+
+    output_buttons = "".join(
+        f'<button data-output="{idx}">OUT{idx}</button>' for idx in range(1, 9)
+    )
+
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RASPIAUDIO CamillaDSP Box</title>
+  <style>
+    :root {{
+      color-scheme: light dark;
+      --bg: #f5f7f9;
+      --panel: #ffffff;
+      --text: #16202a;
+      --muted: #5d6975;
+      --accent: #008b9a;
+      --line: #d7dde3;
+      --danger: #a33b2f;
+    }}
+    body {{
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }}
+    header {{
+      padding: 28px clamp(18px, 4vw, 48px) 18px;
+      background: #0f2733;
+      color: white;
+    }}
+    h1 {{
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: 0;
+    }}
+    header p {{ margin: 0; color: #d6edf1; }}
+    main {{
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px clamp(16px, 4vw, 32px) 40px;
+    }}
+    .status {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 22px;
+    }}
+    .metric, .card, .panel {{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }}
+    .metric {{ padding: 12px 14px; }}
+    .metric span {{
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 4px;
+    }}
+    .metric strong {{ font-size: 17px; }}
+    h2 {{ margin: 24px 0 12px; font-size: 22px; }}
+    .hardware, .actions, .outputs {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }}
+    .modes {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }}
+    .card {{ padding: 18px; }}
+    .card h3 {{ margin: 0 0 8px; font-size: 18px; }}
+    .card p {{ min-height: 58px; color: var(--muted); line-height: 1.4; }}
+    .selected {{ outline: 3px solid rgba(0,139,154,.22); border-color: var(--accent); }}
+    button, .button {{
+      appearance: none;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: white;
+      border-radius: 6px;
+      padding: 9px 12px;
+      font-weight: 650;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+    }}
+    button.secondary, .button.secondary {{
+      background: transparent;
+      color: var(--accent);
+    }}
+    .pill {{
+      background: var(--panel);
+      color: var(--text);
+      border-color: var(--line);
+    }}
+    .pill.selected {{
+      background: #e2f5f7;
+      color: #06424a;
+      border-color: var(--accent);
+    }}
+    .panel {{
+      padding: 18px;
+      margin-top: 18px;
+    }}
+    pre {{
+      white-space: pre-wrap;
+      background: #101820;
+      color: #e6edf3;
+      border-radius: 8px;
+      padding: 12px;
+      max-height: 260px;
+      overflow: auto;
+    }}
+    @media (prefers-color-scheme: dark) {{
+      :root {{
+        --bg: #11171d;
+        --panel: #18222b;
+        --text: #eef3f6;
+        --muted: #a7b2bc;
+        --line: #2d3a45;
+      }}
+      .pill.selected {{ background: #123940; color: #d9f7fb; }}
+    }}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>RASPIAUDIO CamillaDSP Box</h1>
+    <p>Flash image, boot, choose mode, test audio.</p>
+  </header>
+  <main>
+    <section class="status">
+      <div class="metric"><span>Hardware</span><strong>{html.escape(str(hardware))}</strong></div>
+      <div class="metric"><span>Mode</span><strong>{html.escape(str(status.get("active_mode_label", active)))}</strong></div>
+      <div class="metric"><span>CamillaDSP</span><strong>{html.escape(str(camilla))}</strong></div>
+      <div class="metric"><span>TOSLINK card</span><strong>{html.escape(spdif)}</strong></div>
+    </section>
+
+    <h2>Hardware</h2>
+    <section class="hardware">{"".join(hardware_buttons)}</section>
+
+    <h2>Audio Mode</h2>
+    <section class="modes">{"".join(mode_cards)}</section>
+
+    <section class="panel">
+      <h2>Test</h2>
+      <div class="outputs">{output_buttons}</div>
+      <div class="actions" style="margin-top: 12px">
+        <button data-action="test-toslink">Test TOSLINK</button>
+        <button data-action="test-inputs" class="secondary">Record 8 inputs test</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Support</h2>
+      <div class="actions">
+        <button data-action="restart" class="secondary">Restart audio</button>
+        <a class="button secondary" href="/api/diagnostics">Download diagnostics zip</a>
+        <a class="button secondary" href="http://raspiaudio.local:5005/gui/index.html">Advanced CamillaDSP editor</a>
+      </div>
+      <pre id="log">Ready.</pre>
+    </section>
+  </main>
+  <script>
+    const log = document.getElementById('log');
+    async function post(path, data) {{
+      log.textContent = 'Working...';
+      const res = await fetch(path, {{
+        method: 'POST',
+        headers: {{'Content-Type': 'application/json'}},
+        body: JSON.stringify(data || {{}})
+      }});
+      const text = await res.text();
+      let body = text;
+      try {{
+        const json = JSON.parse(text);
+        body = json.output || JSON.stringify(json, null, 2);
+      }} catch (e) {{}}
+      log.textContent = body || 'Done.';
+      if (res.ok && (path.includes('/mode') || path.includes('/hardware'))) {{
+        setTimeout(() => window.location.reload(), 900);
+      }}
+    }}
+    document.querySelectorAll('[data-mode]').forEach(btn => {{
+      btn.addEventListener('click', () => post('/api/mode', {{mode: btn.dataset.mode}}));
+    }});
+    document.querySelectorAll('[data-hardware]').forEach(btn => {{
+      btn.addEventListener('click', () => post('/api/hardware', {{hardware: btn.dataset.hardware}}));
+    }});
+    document.querySelectorAll('[data-output]').forEach(btn => {{
+      btn.addEventListener('click', () => post('/api/test-output', {{channel: btn.dataset.output}}));
+    }});
+    document.querySelector('[data-action="test-toslink"]').addEventListener('click', () => post('/api/test-toslink', {{}}));
+    document.querySelector('[data-action="test-inputs"]').addEventListener('click', () => post('/api/test-inputs', {{}}));
+    document.querySelector('[data-action="restart"]').addEventListener('click', () => post('/api/restart-audio', {{}}));
+  </script>
+</body>
+</html>
+"""
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = "RASPIAUDIOWeb/0.1"
+
+    def send_text(self, status, text, content_type="text/plain; charset=utf-8"):
+        data = text.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def send_json(self, status, payload):
+        self.send_text(status, json.dumps(payload), "application/json; charset=utf-8")
+
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == "/":
+            self.send_text(HTTPStatus.OK, render_page(), "text/html; charset=utf-8")
+            return
+        if parsed.path == "/api/status":
+            self.send_json(HTTPStatus.OK, load_status())
+            return
+        if parsed.path == "/api/diagnostics":
+            with tempfile.NamedTemporaryFile(prefix="raspiaudio-diagnostics-", suffix=".zip", delete=False) as tmp:
+                out_path = tmp.name
+            result = run_command(["/usr/local/sbin/raspiaudio-diagnostics", "--output", out_path], timeout=45)
+            if not result["ok"] or not pathlib.Path(out_path).exists():
+                self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, result)
+                return
+            data = pathlib.Path(out_path).read_bytes()
+            pathlib.Path(out_path).unlink(missing_ok=True)
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/zip")
+            self.send_header("Content-Disposition", "attachment; filename=raspiaudio-diagnostics.zip")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        self.send_text(HTTPStatus.NOT_FOUND, "Not found")
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        try:
+            body = read_body(self)
+        except Exception as exc:
+            self.send_json(HTTPStatus.BAD_REQUEST, {"ok": False, "output": str(exc)})
+            return
+
+        if parsed.path == "/api/mode":
+            mode = str(body.get("mode", ""))
+            result = run_command(["/usr/local/sbin/raspiaudio-mode", "set", mode], timeout=30)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/hardware":
+            hardware = str(body.get("hardware", ""))
+            result = run_command(["/usr/local/sbin/raspiaudio-mode", "set-hardware", hardware], timeout=30)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/restart-audio":
+            result = run_command(["systemctl", "restart", "camilladsp.service"], timeout=30)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/test-output":
+            channel = str(body.get("channel", ""))
+            result = run_command(["/usr/local/sbin/raspiaudio-test-audio", "output", channel], timeout=20)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/test-toslink":
+            result = run_command(["/usr/local/sbin/raspiaudio-test-audio", "toslink"], timeout=20)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/test-inputs":
+            result = run_command(["/usr/local/sbin/raspiaudio-test-audio", "inputs"], timeout=20)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+
+        self.send_text(HTTPStatus.NOT_FOUND, "Not found")
+
+    def log_message(self, fmt, *args):
+        print("%s - %s" % (self.address_string(), fmt % args))
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", default=os.environ.get("RASPIAUDIO_WEB_HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("RASPIAUDIO_WEB_PORT", "8080")))
+    args = parser.parse_args()
+    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    print(f"RASPIAUDIO web UI listening on {args.host}:{args.port}")
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

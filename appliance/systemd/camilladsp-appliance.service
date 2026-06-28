@@ -1,0 +1,18 @@
+[Unit]
+Description=CamillaDSP audio processor for RASPIAUDIO appliance
+After=systemd-modules-load.service sound.target
+Wants=sound.target
+
+[Service]
+Type=simple
+User=raspiaudio
+Group=audio
+SupplementaryGroups=audio
+StateDirectory=camilladsp
+LogsDirectory=camilladsp
+ExecStart=/usr/local/bin/camilladsp -l info -o /var/log/camilladsp/camilladsp.log -w -p 1234 -s /var/lib/camilladsp/statefile.yml /etc/camilladsp/current.yml
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,119 @@
+# RASPIAUDIO CamillaDSP Box Appliance
+
+This folder turns the existing CamillaDSP profiles into a beginner-friendly
+audio appliance:
+
+```text
+Flash image -> boot -> open http://raspiaudio.local -> choose mode -> test audio
+```
+
+The normal user should not need SSH, ALSA commands, YAML editing, `dtoverlay`,
+`systemctl`, or `aplay`.
+
+## V1 Target
+
+- Raspberry Pi 5.
+- Raspberry Pi OS Lite 64-bit.
+- RASPIAUDIO 8xOUT or RASPIAUDIO 8xIN+8xOUT.
+- One host USB profile: 7.1 / 8 channels / 48 kHz / S32_LE.
+- CamillaDSP + CamillaGUI preinstalled.
+- `dtoverlay=hifiberry-dac8x` for both boards.
+- Optional optical TOSLINK stereo output on GPIO12 through `RASPISPDIF`.
+
+8xOUT and 8xIN+8xOUT use the same Linux audio overlay. The hardware selector in
+the appliance only changes the board mode and the optional ADC driver option.
+
+## Install On A Development SD
+
+Use this for development only. Do not publish a development SD image.
+
+1. Flash a blank microSD with Raspberry Pi Imager.
+2. Select `Raspberry Pi OS Lite 64-bit`.
+3. In Imager advanced options, use temporary development credentials:
+   - hostname: `raspiaudio-dev`
+   - username: `raspiaudio`
+   - password: a temporary lab password
+   - SSH: enabled for development
+4. Boot on Raspberry Pi 5 with the RASPIAUDIO board installed.
+5. Clone the repo and run:
+
+```bash
+sudo apt update
+sudo apt install -y git
+git clone https://github.com/RASPIAUDIO/CamillaDSP.git raspiaudio-camilladsp
+cd raspiaudio-camilladsp
+sudo ./appliance/install_appliance.sh
+sudo reboot
+```
+
+For 8xIN+8xOUT development, pass the hardware mode:
+
+```bash
+sudo RASPIAUDIO_HARDWARE=8xin8xout ./appliance/install_appliance.sh
+```
+
+If the final driver exposes an ADC enable option, pass it at install time:
+
+```bash
+sudo RASPIAUDIO_HARDWARE=8xin8xout \
+  RASPIAUDIO_ADC_DRIVER_OPTION='options snd_rpi_hifiberry_dac8x adc_enable=1' \
+  ./appliance/install_appliance.sh
+```
+
+Replace the driver option with the exact option used by the final RASPIAUDIO
+overlay. Leave it empty for 8xOUT.
+
+## Use
+
+Open:
+
+```text
+http://raspiaudio.local/
+```
+
+The appliance dashboard exposes:
+
+- `PC USB 7.1 to 8 analog outputs`
+- `PC USB front L/R to optical TOSLINK stereo`
+- `Stereo active crossover to 8 outputs`
+- `8 analog inputs monitor/test` for 8xIN+8xOUT
+- output tests
+- TOSLINK test
+- diagnostics zip
+- link to the advanced CamillaDSP editor
+
+Advanced CamillaDSP editor:
+
+```text
+http://raspiaudio.local:5005/gui/index.html
+```
+
+## Public Image Rule
+
+Never publish a raw development SD image. A public image must not contain:
+
+- your development password
+- SSH keys
+- Wi-Fi credentials
+- Raspberry Pi Connect account data
+- shell history
+- old logs
+- a fixed `/etc/machine-id`
+
+Before imaging the SD card for beta release, run:
+
+```bash
+sudo ./appliance/release/prepare_release_image.sh
+sudo poweroff
+```
+
+Then image the SD card from your PC, compress it as `.img.xz`, and publish a
+matching SHA256 file.
+
+## Long-Term Release Path
+
+The quick beta path is a cleaned master SD image.
+
+The production path should be reproducible image generation with Raspberry Pi
+`rpi-image-gen`, so every release is built from source instead of manually cloned
+from a lab SD card.
