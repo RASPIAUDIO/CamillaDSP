@@ -26,7 +26,11 @@ if [ "$IMAGE_BUILD" != "1" ]; then
   systemctl stop camilladsp.service camillagui.service raspiaudio-web.service nginx 2>/dev/null || true
 fi
 
-rm -rf /tmp/*
+if [ "$IMAGE_BUILD" = "1" ]; then
+  find /tmp -mindepth 1 -maxdepth 1 ! -name bdebstrap-output -exec rm -rf {} +
+else
+  rm -rf /tmp/*
+fi
 rm -rf /var/tmp/*
 rm -rf /var/log/*.gz /var/log/*.[0-9] /var/log/journal/* 2>/dev/null || true
 find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true
