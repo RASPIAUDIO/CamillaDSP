@@ -11,6 +11,7 @@ MODE_CMD = "/usr/local/sbin/raspiaudio-mode"
 BOX_CONFIG = pathlib.Path("/etc/raspiaudio/box.conf")
 USB_G_AUDIO_CONFIG = pathlib.Path("/etc/modprobe.d/usb_g_audio.conf")
 CURRENT_CONFIG = pathlib.Path("/etc/camilladsp/current.yml")
+UDC_DIR = pathlib.Path("/sys/class/udc")
 
 
 def run(args, timeout=5):
@@ -44,6 +45,30 @@ def service_state(name):
 def command_output(*args):
     _, out = run(list(args), timeout=5)
     return out
+
+
+def network_addresses():
+    out = command_output("hostname", "-I")
+    addresses = []
+    for item in out.split():
+        if item.startswith("127.") or item == "::1":
+            continue
+        addresses.append(item)
+    return addresses
+
+
+def usb_udc_states():
+    states = []
+    if not UDC_DIR.exists():
+        return states
+    for udc in sorted(UDC_DIR.iterdir()):
+        state_path = udc / "state"
+        try:
+            state = state_path.read_text(encoding="utf-8", errors="replace").strip()
+        except OSError:
+            state = "unknown"
+        states.append({"name": udc.name, "state": state or "unknown"})
+    return states
 
 
 def load_mode_status():
@@ -107,6 +132,17 @@ def build_health():
         "Start avahi-daemon or open the dashboard with the Pi IP address.",
     )
 
+    addresses = network_addresses()
+    add_check(
+        checks,
+        "network_address",
+        "Network fallback address",
+        bool(addresses),
+        "warning",
+        f"Fallback address: http://{addresses[0]}/" if addresses else "No non-loopback IP address was found.",
+        "If http://raspiaudio.local does not open, connect Ethernet/Wi-Fi and use the Pi IP address.",
+    )
+
     camilla = service_state("camilladsp.service")
     add_check(
         checks,
@@ -167,6 +203,21 @@ def build_health():
         "warning",
         "g_audio is loaded." if g_audio_loaded else "g_audio is not loaded yet.",
         "Reboot after enabling the gadget profile; Windows may also need the USB cable replugged.",
+    )
+
+    udc_states = usb_udc_states()
+    configured = any(item["state"] == "configured" for item in udc_states)
+    states_text = ", ".join(f"{item['name']}={item['state']}" for item in udc_states)
+    add_check(
+        checks,
+        "usb_link_state",
+        "USB-C data link",
+        configured,
+        "warning",
+        f"USB gadget controller is configured by the host ({states_text})."
+        if configured
+        else f"USB gadget controller is not configured by a host ({states_text or 'no UDC found'}).",
+        "Plug the data side of the USB-C splitter into the computer, then replug or reboot if the RASPIAUDIO USB sound card is not listed.",
     )
 
     arecord = command_output("arecord", "-l")

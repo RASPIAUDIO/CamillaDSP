@@ -69,6 +69,15 @@ python -m py_compile appliance/bin/raspiaudio-health
 python -m py_compile appliance/bin/raspiaudio-validate-release
 PyYAML parse of all configs/*.yml: 15 files
 Raspberry Pi Imager repository generator smoke test with a small .img.xz
+raspiaudio-health candidate run on lab Pi from /tmp
+```
+
+The updated health check reported the live Pi fallback dashboard address
+`http://192.168.1.154/` and correctly warned when the USB gadget controller was
+not attached to a host:
+
+```text
+usb_link_state: 1000480000.usb=not attached
 ```
 
 ## Live Lab Hardware Proof Already Obtained
