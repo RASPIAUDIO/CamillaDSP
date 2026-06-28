@@ -214,3 +214,6 @@ The RASPIAUDIO wrapper creates the publishable Raspberry Pi Imager artefact in:
 The generated image must still pass the validation checklist above before it is
 published as a beta or release image. Use `CREATE_XZ=0` only for faster local
 lab builds where a release artefact is not needed.
+
+Current candidate validation status:
+[appliance_validation_status_2026_06_28.md](appliance_validation_status_2026_06_28.md)
