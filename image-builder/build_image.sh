@@ -27,15 +27,23 @@ fi
 install -d -m 0755 "$SOURCE_DIR"
 rm -f "$SOURCE_ARCHIVE"
 
-tar \
-  --exclude-vcs \
-  --exclude='./artifacts' \
-  --exclude='./image-builder/source' \
-  --exclude='./image-builder/output' \
-  --exclude='./*.img' \
-  --exclude='./*.img.xz' \
-  -C "$REPO_DIR" \
-  -cf "$SOURCE_ARCHIVE" .
+if git -C "$REPO_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  if [ -n "$(git -C "$REPO_DIR" status --porcelain)" ]; then
+    echo "Warning: building from committed Git HEAD; uncommitted files are not included." >&2
+  fi
+  git -C "$REPO_DIR" archive --format=tar --output="$SOURCE_ARCHIVE" HEAD
+else
+  tar \
+    --exclude-vcs \
+    --exclude='./artifacts' \
+    --exclude='./image-builder/source' \
+    --exclude='./image-builder/source/*' \
+    --exclude='./image-builder/output' \
+    --exclude='./*.img' \
+    --exclude='./*.img.xz' \
+    -C "$REPO_DIR" \
+    -cf "$SOURCE_ARCHIVE" .
+fi
 
 echo "Prepared source archive:"
 ls -lh "$SOURCE_ARCHIVE"
