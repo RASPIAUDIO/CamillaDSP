@@ -109,7 +109,7 @@ directly:
 
 ```bash
 sudo systemctl stop camilladsp.service
-arecord -D hw:CARD=sndrpihifiberry,DEV=1 -f S32_LE -r 48000 -c 8 -d 9 raspiaudio_8in_loopback_record_s32.wav
+arecord -D hw:CARD=sndrpihifiberry,DEV=0 -f S32_LE -r 48000 -c 8 -d 9 raspiaudio_8in_loopback_record_s32.wav
 ```
 
 In another shell during the recording:

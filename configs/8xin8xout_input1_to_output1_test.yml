@@ -10,7 +10,7 @@ devices:
   capture:
     type: Alsa
     channels: 8
-    device: "hw:CARD=sndrpihifiberry,DEV=1"
+    device: "hw:CARD=sndrpihifiberry,DEV=0"
     format: S32_LE
   playback:
     type: Alsa

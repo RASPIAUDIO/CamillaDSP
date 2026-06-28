@@ -26,7 +26,7 @@ the appliance only changes the board mode and the optional ADC driver option.
 For the 8xIN+8xOUT board, the appliance includes local 8-channel ADC capture and
 8-channel analog playback support:
 
-- analog inputs: `hw:CARD=sndrpihifiberry,DEV=1`
+- analog inputs: `hw:CARD=sndrpihifiberry,DEV=0`
 - analog outputs: `hw:CARD=sndrpihifiberry,DEV=0`
 - CamillaDSP monitor profile: `8xin8xout_physical_passthrough.yml`
 

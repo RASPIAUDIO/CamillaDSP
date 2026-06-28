@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEVICE="${1:-hw:CARD=sndrpihifiberry,DEV=1}"
+DEVICE="${1:-hw:CARD=sndrpihifiberry,DEV=0}"
 RATE="${RATE:-48000}"
 FORMAT="${FORMAT:-S32_LE}"
 DURATION="${DURATION:-5}"

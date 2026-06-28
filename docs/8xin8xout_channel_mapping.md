@@ -83,7 +83,7 @@ Use `configs/8xin8xout_physical_passthrough.yml`.
 
 The profile uses:
 
-- capture: `hw:CARD=sndrpihifiberry,DEV=1`
+- capture: `hw:CARD=sndrpihifiberry,DEV=0`
 - playback: `hw:CARD=sndrpihifiberry,DEV=0`
 - format: `S32_LE`
 - sample rate: `48000`

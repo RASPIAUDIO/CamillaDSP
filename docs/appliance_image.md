@@ -84,7 +84,7 @@ publishing an 8xIN+8xOUT image.
 
 On 8xIN+8xOUT, the local ALSA layout is:
 
-- analog ADC inputs: `hw:CARD=sndrpihifiberry,DEV=1`, 8 channels
+- analog ADC inputs: `hw:CARD=sndrpihifiberry,DEV=0`, 8 channels
 - analog DAC outputs: `hw:CARD=sndrpihifiberry,DEV=0`, 8 channels
 
 The V1 beginner image uses these inputs locally for CamillaDSP monitor/test
