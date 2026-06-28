@@ -88,6 +88,8 @@ The appliance dashboard exposes:
 - `PC USB front L/R to optical TOSLINK stereo`
 - `Stereo active crossover to 8 outputs`
 - `8 analog inputs monitor/test` for 8xIN+8xOUT
+- system checks for USB gadget, analog output card, TOSLINK, services and
+  `raspiaudio.local`
 - output tests
 - TOSLINK test
 - diagnostics zip
@@ -120,6 +122,26 @@ sudo poweroff
 
 Then image the SD card from your PC, compress it as `.img.xz`, and publish a
 matching SHA256 file.
+
+## Health Check
+
+The dashboard calls:
+
+```bash
+raspiaudio-health --json
+```
+
+This is the beginner support surface. It reports the common first-run failures:
+
+- `raspiaudio.local` / Avahi not ready
+- USB gadget profile missing
+- `UAC2Gadget` not visible
+- analog output card not visible
+- 8xIN ADC not visible when hardware mode is `8xin8xout`
+- TOSLINK `RASPISPDIF` card not visible
+- CamillaDSP or CamillaGUI service inactive
+
+The diagnostics zip includes both text and JSON health reports.
 
 ## Long-Term Release Path
 

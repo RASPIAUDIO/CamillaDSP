@@ -51,6 +51,8 @@ The appliance installer adds:
 - Advanced CamillaGUI on port 5005.
 - Mode switcher through `/etc/camilladsp/current.yml`.
 - Diagnostics zip generator.
+- Beginner health checks for USB gadget, analog output card, TOSLINK, services
+  and `raspiaudio.local`.
 
 ## Hardware Modes
 
@@ -147,6 +149,8 @@ Before publishing a beta image:
 - TOSLINK mode locks a receiver on GPIO12.
 - Reboot keeps the selected mode.
 - Diagnostics zip downloads and contains ALSA, services, logs and boot config.
+- Dashboard health checks are green except optional TOSLINK when no optical
+  hardware is fitted.
 - Repeat on 8xIN+8xOUT with ADC mode enabled.
 
 ## Future Production Build

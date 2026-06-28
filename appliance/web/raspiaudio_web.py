@@ -5,6 +5,7 @@ import json
 import os
 import pathlib
 import subprocess
+import sys
 import tempfile
 import urllib.parse
 from http import HTTPStatus
@@ -38,6 +39,19 @@ HARDWARE = [
     ("8xout", "RASPIAUDIO 8xOUT"),
     ("8xin8xout", "RASPIAUDIO 8xIN+8xOUT"),
 ]
+
+
+def health_command():
+    env_cmd = os.environ.get("RASPIAUDIO_HEALTH_CMD")
+    if env_cmd:
+        return [env_cmd]
+    installed = pathlib.Path("/usr/local/sbin/raspiaudio-health")
+    if installed.exists():
+        return [str(installed)]
+    local = pathlib.Path(__file__).resolve().parent.parent / "bin" / "raspiaudio-health"
+    if local.exists():
+        return [sys.executable, str(local)]
+    return [str(installed)]
 
 
 def run_command(args, timeout=20):
@@ -79,6 +93,16 @@ def load_status():
         return {"error": result["output"]}
 
 
+def load_health():
+    result = run_command([*health_command(), "--json"], timeout=8)
+    if not result["ok"]:
+        return {"status": "unknown", "checks": [], "error": result["output"]}
+    try:
+        return json.loads(result["output"])
+    except json.JSONDecodeError:
+        return {"status": "unknown", "checks": [], "error": result["output"]}
+
+
 def read_body(handler):
     length = int(handler.headers.get("Content-Length", "0") or "0")
     raw = handler.rfile.read(length).decode("utf-8", errors="replace")
@@ -90,11 +114,13 @@ def read_body(handler):
 
 
 def render_page():
-    status = load_status()
+    health = load_health()
+    status = health.get("mode") if isinstance(health.get("mode"), dict) else load_status()
     active = status.get("active_mode", "")
     hardware = status.get("hardware", "")
     camilla = status.get("camilladsp", "unknown")
     spdif = "present" if status.get("spdif_present") else "not detected"
+    health_status = health.get("status", "unknown")
 
     hardware_buttons = []
     for value, label in HARDWARE:
@@ -121,6 +147,38 @@ def render_page():
     output_buttons = "".join(
         f'<button data-output="{idx}">OUT{idx}</button>' for idx in range(1, 9)
     )
+
+    checks = health.get("checks", [])
+    if checks:
+        health_cards = []
+        for check in checks:
+            level = html.escape(str(check.get("level", "unknown")))
+            action = str(check.get("action", ""))
+            action_html = (
+                f'<small>{html.escape(action)}</small>'
+                if action and level != "ok"
+                else ""
+            )
+            health_cards.append(
+                f"""
+                <article class="check {level}">
+                  <span>{level.upper()}</span>
+                  <strong>{html.escape(str(check.get("label", "")))}</strong>
+                  <p>{html.escape(str(check.get("message", "")))}</p>
+                  {action_html}
+                </article>
+                """
+            )
+        health_html = "".join(health_cards)
+    else:
+        health_error = html.escape(str(health.get("error", "Health check not available.")))
+        health_html = f"""
+        <article class="check warning">
+          <span>WARNING</span>
+          <strong>System checks unavailable</strong>
+          <p>{health_error}</p>
+        </article>
+        """
 
     return f"""<!doctype html>
 <html lang="en">
@@ -229,6 +287,34 @@ def render_page():
       padding: 18px;
       margin-top: 18px;
     }}
+    .checks {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }}
+    .check {{
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 12px;
+    }}
+    .check span {{
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 750;
+      margin-bottom: 8px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background: #e4eaef;
+      color: #22313c;
+    }}
+    .check.ok span {{ background: #d9f1df; color: #165a27; }}
+    .check.warning span {{ background: #fff1c7; color: #725400; }}
+    .check.error span {{ background: #f9d8d3; color: #8d2c23; }}
+    .check strong {{ display: block; }}
+    .check p {{ margin: 6px 0 0; color: var(--muted); }}
+    .check small {{ display: block; margin-top: 8px; color: var(--text); }}
     pre {{
       white-space: pre-wrap;
       background: #101820;
@@ -261,6 +347,12 @@ def render_page():
       <div class="metric"><span>Mode</span><strong>{html.escape(str(status.get("active_mode_label", active)))}</strong></div>
       <div class="metric"><span>CamillaDSP</span><strong>{html.escape(str(camilla))}</strong></div>
       <div class="metric"><span>TOSLINK card</span><strong>{html.escape(spdif)}</strong></div>
+      <div class="metric"><span>System check</span><strong>{html.escape(str(health_status))}</strong></div>
+    </section>
+
+    <section class="panel">
+      <h2>System Checks</h2>
+      <div class="checks">{health_html}</div>
     </section>
 
     <h2>Hardware</h2>
@@ -349,6 +441,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/status":
             self.send_json(HTTPStatus.OK, load_status())
+            return
+        if parsed.path == "/api/health":
+            self.send_json(HTTPStatus.OK, load_health())
             return
         if parsed.path == "/api/diagnostics":
             with tempfile.NamedTemporaryFile(prefix="raspiaudio-diagnostics-", suffix=".zip", delete=False) as tmp:
