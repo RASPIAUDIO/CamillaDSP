@@ -320,6 +320,10 @@ def render_page():
     recommended_reason_html = (
         f'<small>{html.escape(recommended_reason)}</small>' if recommended_reason else ""
     )
+    audio_test_actions = f"""
+      <div class="actions">{recommended_button}</div>
+      <div class="outputs">{output_buttons}</div>
+    """
 
     advanced_cards = []
     for mode in MODES[1:]:
@@ -702,7 +706,7 @@ def render_page():
     <section class="wizard">
       {step_card(1, "Hardware detected", hardware_message, hardware_ok)}
       {step_card(2, "USB audio", usb_message, usb_ok, restart_usb_button)}
-      {step_card(3, "Audio test", audio_message, audio_test_ok, f'<div class="outputs">{output_buttons}</div>')}
+      {step_card(3, "Audio test", audio_message, audio_test_ok, audio_test_actions)}
     </section>
 
     <section class="panel recommended">
@@ -712,7 +716,6 @@ def render_page():
         <p>{html.escape(recommended["body"])}</p>
         {recommended_reason_html}
       </div>
-      <div class="actions">{recommended_button}</div>
     </section>
 
     <section class="alerts">{alert_html}</section>
@@ -761,7 +764,7 @@ def render_page():
         body = json.message || json.output || JSON.stringify(json, null, 2);
       }} catch (e) {{}}
       log.textContent = body || 'Done.';
-      if (res.ok && (path.includes('/mode') || path.includes('/factory-reset') || path.includes('/fix-audio'))) {{
+      if (res.ok && (path.includes('/mode') || path.includes('/factory-reset') || path.includes('/fix-audio') || path.includes('/restart-usb-gadget'))) {{
         setTimeout(() => window.location.reload(), 900);
       }}
     }}
