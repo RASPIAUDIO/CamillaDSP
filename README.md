@@ -3,11 +3,31 @@
 Turn a Raspberry Pi 5 into a USB 7.1 sound card with 8 analog outputs for
 active speakers, DSP crossovers, EQ, gain, delay, and phase/time alignment.
 
-For a beginner-friendly product image, use the appliance path:
-`Flash image -> boot -> open http://raspiaudio.local -> choose mode -> test audio`.
-See [docs/appliance_image.md](docs/appliance_image.md).
-The Windows flashing flow is shown in
-[this Raspberry Pi Imager video](docs/assets/raspberry-pi-imager-custom-image-windows.mp4).
+## Quick Start
+
+The recommended beginner path is the flashable RASPIAUDIO appliance image:
+
+```text
+Flash image -> boot -> open http://raspiaudio.local -> choose mode -> test audio
+```
+
+Use this mode if you want a ready-to-use audio box instead of installing Linux
+packages by hand. It includes CamillaDSP, CamillaGUI, the USB 7.1 audio gadget,
+RASPIAUDIO 8-output profiles, active crossover presets, TOSLINK output support,
+and the simple dashboard.
+
+1. Download the RASPIAUDIO CamillaDSP Box image.
+2. Flash the image to a microSD card with Raspberry Pi Imager.
+3. Mount the RASPIAUDIO 8xOUT or 8xIN+8xOUT board on a Raspberry Pi 5.
+4. Boot the Pi and open `http://raspiaudio.local`.
+5. Choose a mode and click the audio test buttons.
+
+Beginner flashing guide:
+[docs/flash_appliance_image.md](docs/flash_appliance_image.md)
+
+Detailed appliance/release notes:
+[docs/appliance_image.md](docs/appliance_image.md)
+
 Candidate public images can be checked on a freshly flashed Pi with
 `sudo raspiaudio-validate-release`.
 
@@ -58,20 +78,22 @@ channels.
 
 - Raspberry Pi 5
 - microSD card, 16 GB or larger
-- Raspberry Pi OS 64-bit
+- RASPIAUDIO CamillaDSP Box image for the recommended path
+- Raspberry Pi OS 64-bit only if you choose the manual install path
 - [RASPIAUDIO 8xOUT](https://raspiaudio.com/product/8xout/)
 - [USB-C power/data splitter](https://amzn.to/4aZwswF)
 - Windows, macOS, or Linux computer
-- Free [Raspberry Pi Connect](https://connect.raspberrypi.com/) account
+- Free [Raspberry Pi Connect](https://connect.raspberrypi.com/) account only for the manual install path
 
 The same software path also works with the output side of the RASPIAUDIO
 8xIN+8xOUT.
 
-## Install
+## Manual Install
 
-For normal GitHub/manual installation, use the steps below. For the flashable
-product-image workflow, read [docs/appliance_image.md](docs/appliance_image.md)
-and [appliance/README.md](appliance/README.md).
+For the flashable product-image workflow, use the beginner guide:
+[docs/flash_appliance_image.md](docs/flash_appliance_image.md)
+
+For normal GitHub/manual installation, use the steps below.
 
 1. Flash the Raspberry Pi
    - Install [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
@@ -176,6 +198,7 @@ Read the preset guide before connecting amplifiers and tweeters:
 
 ## More details
 
+- Flash the appliance image: [docs/flash_appliance_image.md](docs/flash_appliance_image.md)
 - Beginner guide: [profiles/raspiaudio_8xout_usb_7_1_quickstart/README.md](profiles/raspiaudio_8xout_usb_7_1_quickstart/README.md)
 - Active crossover preset: [profiles/stereo_3way_active_crossover_8xout/README.md](profiles/stereo_3way_active_crossover_8xout/README.md)
 - USB gadget details: [docs/usb_audio_gadget_pi5.md](docs/usb_audio_gadget_pi5.md)

@@ -2,6 +2,9 @@
 
 This is the manufacturer workflow for shipping a beginner-friendly image.
 
+For the public beginner flashing guide, link users to:
+[flash_appliance_image.md](flash_appliance_image.md)
+
 The product promise is:
 
 ```text
