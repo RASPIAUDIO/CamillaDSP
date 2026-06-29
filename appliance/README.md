@@ -102,12 +102,11 @@ The appliance dashboard exposes:
 - automatic hardware detection status; there is no beginner hardware selector
 - only modes supported by the detected board are shown
 - modes that need a missing runtime device, such as TOSLINK, are greyed out
-- system checks for USB gadget, analog output card, TOSLINK, services and
-  `raspiaudio.local`
 - output tests
-- TOSLINK test
-- diagnostics zip
-- release-candidate checks
+- `Fix audio`, `Update system`, and diagnostics zip support
+- advanced support tools for TOSLINK/input tests and audio reset
+- collapsed system checks for USB gadget, analog output card, TOSLINK, services
+  and `raspiaudio.local`
 - link to the advanced CamillaDSP editor
 
 Advanced CamillaDSP editor:
@@ -167,7 +166,9 @@ After flashing a candidate public image, run:
 sudo raspiaudio-validate-release
 ```
 
-The same check is available from the dashboard with `Run release checks`.
+This release check is deliberately not a beginner dashboard control. Keep it in
+the factory/lab release procedure and diagnostics zip, not on the main customer
+screen.
 
 It verifies the appliance-level requirements that can be proven from the Pi:
 

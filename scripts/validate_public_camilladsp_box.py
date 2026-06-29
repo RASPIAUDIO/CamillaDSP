@@ -84,6 +84,22 @@ def add(results: list[dict], key: str, ok: bool, message: str, evidence: str = "
     results.append({"key": key, "ok": ok, "message": message, "evidence": evidence})
 
 
+def add_local_file_check(
+    results: list[dict],
+    key: str,
+    path: pathlib.Path,
+    label: str,
+    allow_missing: bool,
+) -> None:
+    exists = path.is_file()
+    if exists:
+        add(results, key, True, f"{label} exists locally", str(path))
+    elif allow_missing:
+        add(results, key, True, f"{label} is missing locally, allowed for draft validation", str(path))
+    else:
+        add(results, key, False, f"{label} exists locally", str(path))
+
+
 def relative_url_path(url: str) -> str:
     parsed = urllib.parse.urlparse(url)
     return parsed.path.lstrip("/")
@@ -172,9 +188,9 @@ def validate_local(args: argparse.Namespace, version: str) -> list[dict]:
     sha_path = local_path_for_url(public_dir, sha_url)
     imager_path = local_path_for_url(public_dir, imager_url)
     missing_ok = bool(args.allow_missing_downloads)
-    add(results, "image_file", image_path.is_file() or missing_ok, "Release image file exists locally", str(image_path))
-    add(results, "sha_file", sha_path.is_file() or missing_ok, "Release SHA256 file exists locally", str(sha_path))
-    add(results, "imager_file", imager_path.is_file() or missing_ok, "Raspberry Pi Imager repository JSON exists locally", str(imager_path))
+    add_local_file_check(results, "image_file", image_path, "Release image file", missing_ok)
+    add_local_file_check(results, "sha_file", sha_path, "Release SHA256 file", missing_ok)
+    add_local_file_check(results, "imager_file", imager_path, "Raspberry Pi Imager repository JSON", missing_ok)
 
     if image_path.is_file() and sha_path.is_file():
         actual_sha = sha256_file(image_path)

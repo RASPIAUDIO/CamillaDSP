@@ -427,6 +427,8 @@ def render_page():
       <details style="margin-top: 12px">
         <summary>Advanced support</summary>
         <div class="actions" style="margin-top: 12px">
+          <button data-action="test-toslink" class="secondary">Test TOSLINK</button>
+          <button data-action="test-inputs" class="secondary">Record 8 inputs test</button>
           <button data-action="factory-reset" class="secondary">Reset audio settings</button>
         </div>
       </details>
@@ -723,10 +725,6 @@ def render_page():
     <details class="panel">
       <summary>More modes</summary>
       <section class="modes">{"".join(advanced_cards)}</section>
-      <div class="actions" style="margin-top: 12px">
-        <button data-action="test-toslink">Test TOSLINK</button>
-        <button data-action="test-inputs" class="secondary">Record 8 inputs test</button>
-      </div>
     </details>
 
     <section class="panel">
