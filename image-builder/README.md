@@ -55,7 +55,7 @@ base URL where the `.img.xz` will be hosted:
 
 ```bash
 RASPIAUDIO_RELEASE_VERSION=2026.06.28 \
-RASPIAUDIO_IMAGE_BASE_URL=https://raspiaudio.com/downloads \
+RASPIAUDIO_IMAGE_BASE_URL=https://raspiaudio.com/camilladsp-box/downloads \
 ./image-builder/build_image.sh
 ```
 
@@ -118,18 +118,24 @@ Before publishing an image:
    CamillaDSP logs, health report and release validation output.
 10. Repeat output-side validation on 8xIN+8xOUT.
 
-Only after this publish:
-
-```text
-raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz
-raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz.sha256
-```
-
-Copy those files plus the generated Imager JSON into `public/camilladsp-box/`,
-then run:
+Only after that, stage the release into the public bundle:
 
 ```bash
-python3 scripts/validate_public_camilladsp_box.py
+python3 image-builder/stage_public_release.py \
+  --image ~/rpi-image-gen/work/deploy-v2.7.0/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz \
+  --raw-image ~/rpi-image-gen/work/image-raspiaudio-dspbox-pi5/raspiaudio-dspbox-pi5.img \
+  --version YYYY.MM.DD
+```
+
+This copies the image into `public/camilladsp-box/downloads/`, writes the
+matching `.sha256`, generates or copies the Raspberry Pi Imager repository
+JSON, updates `releases.json`, updates the public download link, and runs the
+local public-page validator.
+
+Then run the live check after uploading the whole `public/camilladsp-box/`
+folder to `https://raspiaudio.com/camilladsp-box/`:
+
+```bash
 python3 scripts/validate_public_camilladsp_box.py \
   --base-url https://raspiaudio.com/camilladsp-box
 ```
@@ -150,7 +156,7 @@ The safer production path is to generate it from the release artefact:
 python3 image-builder/generate_imager_repository.py \
   --image ~/rpi-image-gen/work/deploy-v2.7.0/raspiaudio-dspbox-pi5-2026.06.28.img.xz \
   --raw-image ~/rpi-image-gen/work/image-raspiaudio-dspbox-pi5/raspiaudio-dspbox-pi5.img \
-  --url https://raspiaudio.com/downloads/raspiaudio-dspbox-pi5-2026.06.28.img.xz \
+  --url https://raspiaudio.com/camilladsp-box/downloads/raspiaudio-dspbox-pi5-2026.06.28.img.xz \
   --output ~/rpi-image-gen/work/deploy-v2.7.0/raspiaudio-imager-repository-2026.06.28.json \
   --release-date 2026-06-28
 ```

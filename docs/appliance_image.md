@@ -335,12 +335,31 @@ The RASPIAUDIO wrapper creates the publishable Raspberry Pi Imager artefact in:
 ```
 
 The Imager repository JSON is only generated when
-`RASPIAUDIO_IMAGE_BASE_URL` is set. Publish it only after the exact image has
-passed the fresh-flash validation checklist.
+`RASPIAUDIO_IMAGE_BASE_URL` is set. Use:
+
+```bash
+RASPIAUDIO_IMAGE_BASE_URL=https://raspiaudio.com/camilladsp-box/downloads
+```
+
+Publish it only after the exact image has passed the fresh-flash validation
+checklist.
 
 The generated image must still pass the validation checklist above before it is
 published as a beta or release image. Use `CREATE_XZ=0` only for faster local
 lab builds where a release artefact is not needed.
+
+After validation, stage the public site bundle from the real image:
+
+```bash
+python3 image-builder/stage_public_release.py \
+  --image ~/rpi-image-gen/work/deploy-v2.7.0/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz \
+  --raw-image ~/rpi-image-gen/work/image-raspiaudio-dspbox-pi5/raspiaudio-dspbox-pi5.img \
+  --version YYYY.MM.DD
+```
+
+That command writes the public `downloads/` files, updates `releases.json`,
+updates the `Download image` link and validates the local public bundle before
+upload.
 
 Current candidate validation status:
 [appliance_validation_status_2026_06_28.md](appliance_validation_status_2026_06_28.md)

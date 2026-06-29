@@ -204,6 +204,16 @@ def validate_local(args: argparse.Namespace, version: str) -> list[dict]:
         imager = read_json(imager_path)
         imager_text = json.dumps(imager)
         add(results, "imager_mentions_image", expected_image_name in imager_text, "Imager repository references the release image")
+        os_list = imager.get("os_list", [])
+        item = os_list[0] if isinstance(os_list, list) and os_list else {}
+        add(results, "imager_url_match", item.get("url") == image_url, "Imager repository URL matches release image URL", str(item.get("url", "")))
+        add(
+            results,
+            "imager_website_public",
+            item.get("website") == "https://raspiaudio.com/camilladsp-box",
+            "Imager repository website points to the public product page",
+            str(item.get("website", "")),
+        )
 
     return results
 

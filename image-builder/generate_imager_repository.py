@@ -20,7 +20,7 @@ DEFAULT_DESCRIPTION = (
     "TOSLINK."
 )
 DEFAULT_ICON = "https://raspiaudio.com/wp-content/uploads/2025/raspiaudio-icon.png"
-DEFAULT_WEBSITE = "https://github.com/RASPIAUDIO/CamillaDSP"
+DEFAULT_WEBSITE = "https://raspiaudio.com/camilladsp-box"
 
 
 def sha256_file(path: pathlib.Path, chunk_size: int = 1024 * 1024) -> tuple[int, str]:
@@ -126,6 +126,7 @@ def main() -> int:
     parser.add_argument("--icon", default=DEFAULT_ICON)
     parser.add_argument("--website", default=DEFAULT_WEBSITE)
     parser.add_argument("--devices", default="pi5-64bit")
+    parser.add_argument("--quiet", action="store_true", help="Only write the JSON file.")
     parser.add_argument(
         "--init-format",
         default="none",
@@ -137,11 +138,11 @@ def main() -> int:
     output = pathlib.Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(repository, indent=2) + "\n", encoding="utf-8")
-    print(f"Wrote {output}")
-    print(json.dumps(repository["os_list"][0], indent=2))
+    if not args.quiet:
+        print(f"Wrote {output}")
+        print(json.dumps(repository["os_list"][0], indent=2))
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

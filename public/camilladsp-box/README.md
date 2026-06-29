@@ -15,8 +15,17 @@ Upload all files in this folder, including:
 - `downloads/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz.sha256`
 - `raspiaudio-imager-repository-YYYY.MM.DD.json`
 
-Before publishing a release, replace the placeholder URLs in `index.html` and
-`releases.json` with the exact validated image filename and SHA256 file.
+Before publishing a release, stage the exact validated image into this bundle:
+
+```bash
+python3 image-builder/stage_public_release.py \
+  --image ~/rpi-image-gen/work/deploy-v2.7.0/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz \
+  --raw-image ~/rpi-image-gen/work/image-raspiaudio-dspbox-pi5/raspiaudio-dspbox-pi5.img \
+  --version YYYY.MM.DD
+```
+
+This updates `index.html`, `releases.json`, the SHA256 file and the Raspberry Pi
+Imager repository JSON from the actual image artefact.
 
 ## Validate Before Uploading
 
@@ -27,9 +36,7 @@ missing:
 python3 scripts/validate_public_camilladsp_box.py --allow-missing-downloads
 ```
 
-Before uploading the page as a real public release, copy the generated image,
-SHA256 file and Raspberry Pi Imager repository JSON into this folder, then run
-the strict check:
+Before uploading the page as a real public release, run the strict check:
 
 ```bash
 python3 scripts/validate_public_camilladsp_box.py
