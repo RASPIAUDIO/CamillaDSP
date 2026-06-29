@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION_FILE="/etc/raspiaudio/version"
-CHANNEL_FILE="/etc/raspiaudio/update-channel-url"
-FALLBACK_CHANGELOG="/etc/raspiaudio/changelog.md"
+VERSION_FILE="${RASPIAUDIO_VERSION_FILE:-/etc/raspiaudio/version}"
+CHANNEL_FILE="${RASPIAUDIO_CHANNEL_FILE:-/etc/raspiaudio/update-channel-url}"
+FALLBACK_CHANGELOG="${RASPIAUDIO_CHANGELOG_FILE:-/etc/raspiaudio/changelog.md}"
 DEFAULT_CHANNEL_URL="https://raspiaudio.com/camilladsp-box/releases.json"
 
 current_version() {
   if [ -f "$VERSION_FILE" ]; then
-    cat "$VERSION_FILE"
+    tr -d '\r\n' <"$VERSION_FILE"
   else
     echo "unknown"
   fi
@@ -51,36 +51,42 @@ sha = payload.get("sha256_url", "")
 imager = payload.get("imager_repository_url", "")
 notes = payload.get("changelog", [])
 
+print("Update system")
 print(product)
 print(f"Current version: {current}")
-print(f"Latest version:  {latest}")
-print(f"Release date:    {date}")
+print(f"Latest version: {latest}")
+print(f"Release date: {date}")
 print()
 
 if current == latest:
-    print("Status: this image is up to date.")
+    print("Status: your system is up to date.")
+    print()
+    print("No action is needed.")
 else:
-    print("Status: a newer image may be available.")
+    print("Status: a newer image is available.")
+    print()
+    print("Next step:")
+    if page:
+        print(f"Download and flash the latest image from {page}")
+    else:
+        print("Download and flash the latest image from the RASPIAUDIO support page.")
 
 print()
-print("Install update:")
-print("  1. Download the new .img.xz image.")
-print("  2. Flash it with Raspberry Pi Imager.")
-print("  3. Boot and open http://raspiaudio.local.")
+print("This appliance updates by flashing a new image with Raspberry Pi Imager.")
 print()
 
 if page:
-    print(f"Download page: {page}")
+    print(f"Page: {page}")
 if image:
-    print(f"Image:         {image}")
+    print(f"Image: {image}")
 if sha:
-    print(f"SHA256:        {sha}")
+    print(f"SHA256: {sha}")
 if imager:
-    print(f"Imager repo:   {imager}")
+    print(f"Raspberry Pi Imager: {imager}")
 
 if notes:
     print()
-    print("Changelog:")
+    print("What's new:")
     for item in notes:
         print(f"- {item}")
 PY
@@ -92,17 +98,16 @@ print_fallback() {
 RASPIAUDIO CamillaDSP Box
 Current version: $(current_version)
 
-Update channel:
-  $url
+Update information is not online yet.
 
-Could not read the online release channel from this Pi.
-
-For public images, update by flashing the latest .img.xz image with
-Raspberry Pi Imager, then boot and open:
-  http://raspiaudio.local
+When a new image is published, update by flashing it with Raspberry Pi Imager,
+then boot and open http://raspiaudio.local.
 
 Download page:
   https://raspiaudio.com/camilladsp-box
+
+Checked:
+  $url
 EOF
 
   if [ -f "$FALLBACK_CHANGELOG" ]; then
