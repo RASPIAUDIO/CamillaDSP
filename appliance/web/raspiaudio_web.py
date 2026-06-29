@@ -42,6 +42,7 @@ MODES = [
 
 LAB_MODE_FILE = pathlib.Path("/etc/raspiaudio/lab-mode")
 VERSION_FILE = pathlib.Path("/etc/raspiaudio/version")
+CHANGELOG_FILE = pathlib.Path("/etc/raspiaudio/changelog.md")
 
 REQUIREMENT_LABELS = {
     "analog_out": "8 analog outputs not detected",
@@ -232,6 +233,29 @@ def load_version():
     return "unknown"
 
 
+def load_changelog_items(limit=5):
+    candidates = [
+        CHANGELOG_FILE,
+        pathlib.Path(__file__).resolve().parent.parent / "CHANGELOG.md",
+    ]
+    items = []
+    for path in candidates:
+        try:
+            if not path.exists():
+                continue
+            for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+                stripped = line.strip()
+                if stripped.startswith("- "):
+                    item = stripped[2:].replace("`", "")
+                    if item:
+                        items.append(item)
+                if len(items) >= limit:
+                    return items
+        except OSError:
+            continue
+    return items
+
+
 def hardware_label(status):
     hardware = str(status.get("hardware", "unknown"))
     if hardware == "8xin8xout":
@@ -272,6 +296,7 @@ def render_page():
     camilla = status.get("camilladsp", "unknown")
     health_status = health.get("status", "unknown")
     version = load_version()
+    changelog_items = load_changelog_items()
     checks_ok = check_ok_map(health)
     checks_by_key = check_by_key(health)
 
@@ -422,6 +447,11 @@ def render_page():
         <button data-action="update-system" class="secondary">Update system</button>
         <a class="button secondary" href="/api/diagnostics">Download diagnostics zip</a>
     """
+    changelog_html = ""
+    if changelog_items:
+        changelog_html = "<h3>What's included</h3><ul>" + "".join(
+            f"<li>{html.escape(item)}</li>" for item in changelog_items
+        ) + "</ul>"
     advanced_support = f"""
       <details style="margin-top: 12px">
         <summary>Advanced support</summary>
@@ -602,6 +632,16 @@ def render_page():
       padding: 18px;
       margin-top: 18px;
     }}
+    .panel h3 {{
+      margin: 16px 0 8px;
+      font-size: 18px;
+    }}
+    .panel ul {{
+      margin: 0 0 14px;
+      padding-left: 22px;
+      color: var(--muted);
+      line-height: 1.45;
+    }}
     details.panel summary {{
       cursor: pointer;
       font-size: 22px;
@@ -715,6 +755,7 @@ def render_page():
       <div class="actions">
         {visible_support_actions}
       </div>
+      {changelog_html}
       {advanced_support}
       <pre id="log">Ready.</pre>
     </details>
