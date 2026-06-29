@@ -374,6 +374,7 @@ def render_page():
       <h2>Support</h2>
       <div class="actions">
         <button data-action="restart" class="secondary">Restart audio</button>
+        <button data-action="restart-usb" class="secondary">Restart USB gadget</button>
         <button data-action="factory-reset" class="secondary">Factory reset audio</button>
         <button data-action="validate-release" class="secondary">Run release checks</button>
         <a class="button secondary" href="/api/diagnostics">Download diagnostics zip</a>
@@ -414,6 +415,7 @@ def render_page():
     document.querySelector('[data-action="test-toslink"]').addEventListener('click', () => post('/api/test-toslink', {{}}));
     document.querySelector('[data-action="test-inputs"]').addEventListener('click', () => post('/api/test-inputs', {{}}));
     document.querySelector('[data-action="restart"]').addEventListener('click', () => post('/api/restart-audio', {{}}));
+    document.querySelector('[data-action="restart-usb"]').addEventListener('click', () => post('/api/restart-usb-gadget', {{}}));
     document.querySelector('[data-action="factory-reset"]').addEventListener('click', () => post('/api/factory-reset', {{}}));
     document.querySelector('[data-action="validate-release"]').addEventListener('click', () => post('/api/validate-release', {{}}));
   </script>
@@ -485,6 +487,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/restart-audio":
             result = run_command(["systemctl", "restart", "camilladsp.service"], timeout=30)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/restart-usb-gadget":
+            result = run_command(["/usr/local/sbin/raspiaudio-restart-usb-gadget"], timeout=30)
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/factory-reset":

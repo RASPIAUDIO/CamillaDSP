@@ -136,7 +136,31 @@ Public tutorial:
 7. Choose `PC USB 7.1 to 8 analog outputs`.
 8. Click output tests.
 
+[Windows flashing video](assets/raspberry-pi-imager-custom-image-windows.mp4)
+shows the Raspberry Pi Imager `Use custom image` flow for the `.img.xz`
+appliance image.
+
 Linux details belong in the advanced documentation, not in the first tutorial.
+
+## First-Flash Findings
+
+Fresh-flash validation on 2026-06-29 proved:
+
+- `http://raspiaudio.local/` comes online.
+- The image detects `8xin8xout` hardware.
+- CamillaDSP, CamillaGUI, nginx, Avahi, and the dashboard start.
+- The analog 8-output ALSA card and analog 8-input ALSA card are visible.
+
+The same test found fixes that must be included in the next image:
+
+- Dashboard output tests must temporarily stop CamillaDSP before using
+  `speaker-test`, otherwise ALSA returns `Device or resource busy`.
+- Diagnostics download must remove the pre-created temporary file before
+  writing the zip.
+- The dashboard needs a `Restart USB gadget` action for cases where the Pi USB-C
+  controller reports `not attached` even though the data cable is connected.
+- TOSLINK test should try to build/load the GPIO12 `RASPISPDIF` driver if the
+  first-boot service did not leave the ALSA card visible.
 
 ## Validation Checklist
 
@@ -173,6 +197,9 @@ Before publishing a beta image:
 The command is intentionally not the whole release proof. Host OS detection,
 real analog sound on every output, receiver lock, and power-cycle persistence
 are still manual product checks.
+
+Latest fresh-flash validation notes:
+[2026-06-29](appliance_validation_status_2026_06_29.md).
 
 ## Future Production Build
 

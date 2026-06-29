@@ -6,6 +6,8 @@ active speakers, DSP crossovers, EQ, gain, delay, and phase/time alignment.
 For a beginner-friendly product image, use the appliance path:
 `Flash image -> boot -> open http://raspiaudio.local -> choose mode -> test audio`.
 See [docs/appliance_image.md](docs/appliance_image.md).
+The Windows flashing flow is shown in
+[this Raspberry Pi Imager video](docs/assets/raspberry-pi-imager-custom-image-windows.mp4).
 Candidate public images can be checked on a freshly flashed Pi with
 `sudo raspiaudio-validate-release`.
 

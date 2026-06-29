@@ -117,6 +117,7 @@ install_appliance_files() {
   install -m 0755 "$SCRIPT_DIR/bin/raspiaudio-mode" /usr/local/sbin/raspiaudio-mode
   install -m 0755 "$SCRIPT_DIR/bin/raspiaudio-health" /usr/local/sbin/raspiaudio-health
   install -m 0755 "$SCRIPT_DIR/bin/raspiaudio-diagnostics" /usr/local/sbin/raspiaudio-diagnostics
+  install -m 0755 "$SCRIPT_DIR/bin/raspiaudio-restart-usb-gadget" /usr/local/sbin/raspiaudio-restart-usb-gadget
   install -m 0755 "$SCRIPT_DIR/bin/raspiaudio-test-audio" /usr/local/sbin/raspiaudio-test-audio
   install -m 0755 "$SCRIPT_DIR/bin/raspiaudio-validate-release" /usr/local/sbin/raspiaudio-validate-release
   install -m 0755 "$SCRIPT_DIR/web/raspiaudio_web.py" /opt/raspiaudio-web/raspiaudio_web.py

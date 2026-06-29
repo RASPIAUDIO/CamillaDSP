@@ -80,6 +80,7 @@ if [ -z "$OUT" ]; then
 fi
 
 mkdir -p "$(dirname "$OUT")"
+rm -f "$OUT"
 if command -v zip >/dev/null 2>&1; then
   (cd "$WORK" && zip -qr "$OUT" "$(basename "$REPORT")")
 else

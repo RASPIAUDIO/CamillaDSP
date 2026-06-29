@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(id -u)" -ne 0 ]; then
+  exec sudo -E bash "$0" "$@"
+fi
+
+CAMILLA_WAS_ACTIVE=0
+
+resume_camilla() {
+  if [ "$CAMILLA_WAS_ACTIVE" = "1" ]; then
+    systemctl start camilladsp.service || true
+  fi
+}
+
+if systemctl is-active --quiet camilladsp.service; then
+  CAMILLA_WAS_ACTIVE=1
+  systemctl stop camilladsp.service
+  sleep 1
+fi
+
+trap resume_camilla EXIT
+
+if lsmod | grep -q '^g_audio[[:space:]]'; then
+  if ! modprobe -r g_audio; then
+    echo "Could not unload g_audio. ALSA clients still using the USB gadget:" >&2
+    fuser -v /dev/snd/* >&2 || true
+    exit 1
+  fi
+fi
+
+modprobe g_audio
+sleep 2
+
+echo "USB gadget state:"
+for udc in /sys/class/udc/*; do
+  [ -e "$udc" ] || continue
+  printf '  %s=%s\n' "$(basename "$udc")" "$(cat "$udc/state" 2>/dev/null || echo unknown)"
+done
+
+if ! aplay -l 2>/dev/null | grep -q UAC2Gadget && ! arecord -l 2>/dev/null | grep -q UAC2Gadget; then
+  echo "UAC2Gadget ALSA card is not visible after reload." >&2
+  exit 1
+fi
+
+echo "UAC2Gadget is visible locally. If the host still does not list the RASPIAUDIO USB sound card, replug the data cable or reboot with the data cable connected."

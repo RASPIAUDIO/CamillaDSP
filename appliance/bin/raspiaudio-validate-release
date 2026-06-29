@@ -16,6 +16,7 @@ import zipfile
 MODE_CMD = "/usr/local/sbin/raspiaudio-mode"
 HEALTH_CMD = "/usr/local/sbin/raspiaudio-health"
 DIAGNOSTICS_CMD = "/usr/local/sbin/raspiaudio-diagnostics"
+RESTART_USB_CMD = "/usr/local/sbin/raspiaudio-restart-usb-gadget"
 TEST_AUDIO_CMD = "/usr/local/sbin/raspiaudio-test-audio"
 
 BOOT_CONFIGS = (
@@ -109,6 +110,16 @@ def systemctl_enabled(name):
     code, out = command_text(["systemctl", "is-enabled", name], timeout=3)
     state = out.strip() or "unknown"
     return code == 0 and state == "enabled", state
+
+
+def udc_states():
+    states = []
+    for path in pathlib.Path("/sys/class/udc").glob("*"):
+        try:
+            states.append((path.name, (path / "state").read_text().strip()))
+        except Exception as exc:
+            states.append((path.name, f"read error: {exc}"))
+    return states
 
 
 def load_mode_status():
@@ -221,7 +232,7 @@ def validate_release(args):
             "Check that the appliance files are installed.",
         )
 
-    for command in (MODE_CMD, HEALTH_CMD, DIAGNOSTICS_CMD, TEST_AUDIO_CMD):
+    for command in (MODE_CMD, HEALTH_CMD, DIAGNOSTICS_CMD, RESTART_USB_CMD, TEST_AUDIO_CMD):
         path = pathlib.Path(command)
         add_check(
             checks,
@@ -300,6 +311,19 @@ def validate_release(args):
         "g_audio autoload is configured." if "g_audio" in modules_load else "g_audio autoload is not configured.",
         str(MODULES_LOAD_CONFIG),
         "Re-run the USB gadget installer.",
+    )
+
+    states = udc_states()
+    configured = any(state == "configured" for _, state in states)
+    evidence = ", ".join(f"{name}={state}" for name, state in states) or "no UDC found"
+    add_check(
+        checks,
+        "usb_host_link",
+        "USB-C data link configured by host",
+        status_from_bool(configured, warning=True),
+        "USB gadget controller is configured by a host." if configured else "USB gadget controller is not configured by a host.",
+        evidence,
+        "Plug the data side of the USB-C splitter into the computer, then use Restart USB gadget or reboot.",
     )
 
     for service in ("avahi-daemon", "nginx", "raspiaudio-spdif.service", "camilladsp.service", "camillagui.service", "raspiaudio-web.service"):

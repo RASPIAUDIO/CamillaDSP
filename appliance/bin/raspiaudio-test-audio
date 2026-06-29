@@ -5,6 +5,7 @@ ANALOG_DEVICE="${RASPIAUDIO_ANALOG_DEVICE:-hw:CARD=sndrpihifiberry,DEV=0}"
 ADC_DEVICE="${RASPIAUDIO_ADC_DEVICE:-hw:CARD=sndrpihifiberry,DEV=0}"
 SPDIF_DEVICE="${RASPIAUDIO_SPDIF_DEVICE:-hw:CARD=RASPISPDIF,DEV=0}"
 SECONDS="${RASPIAUDIO_TEST_SECONDS:-2}"
+CAMILLA_WAS_ACTIVE=0
 
 usage() {
   cat <<'EOF'
@@ -22,6 +23,51 @@ need_cmd() {
   }
 }
 
+suspend_camilla() {
+  if [ "${RASPIAUDIO_TEST_KEEP_CAMILLA:-0}" = "1" ]; then
+    return 0
+  fi
+  if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet camilladsp.service; then
+    CAMILLA_WAS_ACTIVE=1
+    echo "Stopping CamillaDSP temporarily so the hardware test can open the ALSA device."
+    systemctl stop camilladsp.service
+    sleep 1
+  fi
+}
+
+resume_camilla() {
+  if [ "$CAMILLA_WAS_ACTIVE" = "1" ]; then
+    echo "Restarting CamillaDSP."
+    systemctl start camilladsp.service || true
+  fi
+}
+
+run_with_hardware_device() {
+  suspend_camilla
+  trap resume_camilla EXIT
+  "$@"
+}
+
+ensure_spdif_card() {
+  if aplay -l 2>/dev/null | grep -q RASPISPDIF; then
+    return 0
+  fi
+
+  echo "RASPISPDIF card is not visible; trying to build/load the GPIO12 optical driver."
+  if [ -x /usr/local/sbin/raspiaudio-install-spdif-driver ]; then
+    /usr/local/sbin/raspiaudio-install-spdif-driver || true
+  fi
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl restart raspiaudio-spdif.service || true
+    sleep 1
+  fi
+
+  if ! aplay -l 2>/dev/null | grep -q RASPISPDIF; then
+    echo "RASPISPDIF card is still not visible. Download diagnostics and inspect raspiaudio-spdif-firstboot.service." >&2
+    exit 1
+  fi
+}
+
 test_output() {
   local ch="$1"
   case "$ch" in
@@ -29,18 +75,19 @@ test_output() {
     *) echo "Output channel must be 1..8." >&2; exit 1 ;;
   esac
   need_cmd speaker-test
-  speaker-test -D "$ANALOG_DEVICE" -c 8 -r 48000 -F S32_LE -t sine -f 1000 -s "$ch" -l 1
+  run_with_hardware_device speaker-test -D "$ANALOG_DEVICE" -c 8 -r 48000 -F S32_LE -t sine -f 1000 -s "$ch" -l 1
 }
 
 test_toslink() {
   need_cmd speaker-test
-  speaker-test -D "$SPDIF_DEVICE" -c 2 -r 48000 -F S16_LE -t sine -f 1000 -l 1
+  ensure_spdif_card
+  run_with_hardware_device speaker-test -D "$SPDIF_DEVICE" -c 2 -r 48000 -F S16_LE -t sine -f 1000 -l 1
 }
 
 test_inputs() {
   need_cmd arecord
   local out="/tmp/raspiaudio-input-test.wav"
-  arecord -D "$ADC_DEVICE" -f S32_LE -r 48000 -c 8 -d "$SECONDS" "$out"
+  run_with_hardware_device arecord -D "$ADC_DEVICE" -f S32_LE -r 48000 -c 8 -d "$SECONDS" "$out"
   echo "$out"
 }
 
