@@ -49,6 +49,17 @@ REQUIREMENT_LABELS = {
     "toslink": "TOSLINK output not detected",
 }
 
+BEGINNER_ALERT_KEYS = {
+    "hardware_autodetect",
+    "usb_profile",
+    "g_audio",
+    "usb_link_state",
+    "uac2_capture",
+    "analog_out",
+    "camilladsp",
+    "current_config",
+}
+
 
 def health_command():
     env_cmd = os.environ.get("RASPIAUDIO_HEALTH_CMD")
@@ -163,6 +174,46 @@ def check_by_key(health):
         if key:
             checks[key] = check
     return checks
+
+
+def simple_health_text(health):
+    status = health.get("status", "unknown")
+    mode = health.get("mode", {}) if isinstance(health.get("mode"), dict) else {}
+    checks = check_by_key(health)
+
+    hardware = hardware_label(mode)
+    usb_ok = (
+        checks.get("g_audio", {}).get("ok")
+        and checks.get("usb_link_state", {}).get("ok")
+        and checks.get("uac2_capture", {}).get("ok")
+    )
+    out_ok = bool(checks.get("analog_out", {}).get("ok"))
+    engine_ok = bool(checks.get("camilladsp", {}).get("ok"))
+
+    lines = [
+        "Audio check refreshed.",
+        f"Hardware: {hardware}",
+        f"USB audio: {'connected to computer' if usb_ok else 'plug the USB data cable'}",
+        f"8 outputs: {'ready' if out_ok else 'not detected yet'}",
+        f"Audio engine: {'ready' if engine_ok else 'not ready yet'}",
+        f"Overall status: {status}",
+    ]
+
+    next_steps = []
+    if not usb_ok:
+        next_steps.append("Plug or replug the data side of the USB-C splitter, then press Restart USB.")
+    if not out_ok:
+        next_steps.append("Power off, reseat the RASPIAUDIO board, then boot again.")
+    if not engine_ok:
+        next_steps.append("Press Fix audio again. If it still fails, download diagnostics zip.")
+    if next_steps:
+        lines.append("")
+        lines.append("Next step:")
+        lines.extend(f"- {item}" for item in next_steps)
+    else:
+        lines.append("")
+        lines.append("Ready: use Test OUT1 to OUT8 at low volume.")
+    return "\n".join(lines)
 
 
 def load_version():
@@ -343,6 +394,7 @@ def render_page():
         check
         for check in checks_by_key.values()
         if str(check.get("level", "ok")) != "ok"
+        and str(check.get("key", "")) in BEGINNER_ALERT_KEYS
     ]
     if blocking_checks:
         alert_html = "".join(
@@ -361,6 +413,26 @@ def render_page():
           <p>All required checks are passing.</p>
         </article>
         """
+
+    visible_support_actions = """
+        <button data-action="fix-audio">Fix audio</button>
+        <button data-action="update-system" class="secondary">Update system</button>
+        <a class="button secondary" href="/api/diagnostics">Download diagnostics zip</a>
+    """
+    lab_release_button = (
+        '<button data-action="validate-release" class="secondary">Run release checks</button>'
+        if LAB_MODE_FILE.exists()
+        else ""
+    )
+    advanced_support = f"""
+      <details style="margin-top: 12px">
+        <summary>Advanced support</summary>
+        <div class="actions" style="margin-top: 12px">
+          <button data-action="factory-reset" class="secondary">Reset audio settings</button>
+          {lab_release_button}
+        </div>
+      </details>
+    """
 
     return f"""<!doctype html>
 <html lang="en">
@@ -545,6 +617,9 @@ def render_page():
       margin: 0;
     }}
     details.panel[open] summary {{ margin-bottom: 14px; }}
+    details summary {{
+      cursor: pointer;
+    }}
     .alerts {{
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -660,12 +735,9 @@ def render_page():
     <section class="panel">
       <h2>Support</h2>
       <div class="actions">
-        <button data-action="fix-audio">Fix audio</button>
-        <button data-action="update-system" class="secondary">Update system</button>
-        <button data-action="factory-reset" class="secondary">Factory reset audio</button>
-        <button data-action="validate-release" class="secondary">Run release checks</button>
-        <a class="button secondary" href="/api/diagnostics">Download diagnostics zip</a>
+        {visible_support_actions}
       </div>
+      {advanced_support}
       <pre id="log">Ready.</pre>
     </section>
 
@@ -692,7 +764,7 @@ def render_page():
       let body = text;
       try {{
         const json = JSON.parse(text);
-        body = json.output || JSON.stringify(json, null, 2);
+        body = json.message || json.output || JSON.stringify(json, null, 2);
       }} catch (e) {{}}
       log.textContent = body || 'Done.';
       if (res.ok && (path.includes('/mode') || path.includes('/factory-reset') || path.includes('/fix-audio'))) {{
@@ -789,6 +861,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/fix-audio":
             result = run_command(["/usr/local/sbin/raspiaudio-fix-audio"], timeout=120)
+            health = load_health()
+            result["message"] = simple_health_text(health)
+            result["health"] = health
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/update-system":

@@ -149,11 +149,11 @@ def build_health():
     add_check(
         checks,
         "camilladsp",
-        "CamillaDSP",
+        "Audio engine",
         camilla == "active",
         "error",
-        f"camilladsp.service is {camilla}.",
-        "Use Restart audio, then download diagnostics if it stays inactive.",
+        "Audio engine is ready." if camilla == "active" else "Audio engine is not ready yet.",
+        "Press Fix audio, then download diagnostics zip if it stays unavailable.",
     )
 
     gui = service_state("camillagui.service")
@@ -171,10 +171,10 @@ def build_health():
     add_check(
         checks,
         "web",
-        "Dashboard service",
+        "Dashboard",
         web == "active",
         "warning",
-        f"raspiaudio-web.service is {web}.",
+        "Dashboard is ready." if web == "active" else "Dashboard background process is not ready.",
         "If this page is visible, the web backend may be running manually or through nginx.",
     )
 
@@ -187,15 +187,13 @@ def build_health():
             auto_ok,
             "warning",
             (
-                f"Auto-detected {hardware} from ALSA. "
-                "The hifiberry-dac8x overlay uses GPIO5 active-low as hasadc-gpio."
+                f"{hardware} detected."
             )
             if auto_ok
             else (
-                "Auto-detect could not find the RASPIAUDIO ALSA card yet. "
-                "The hifiberry-dac8x overlay uses GPIO5 active-low as hasadc-gpio."
+                "RASPIAUDIO board was not detected yet."
             ),
-            "Check HAT seating, dtoverlay=hifiberry-dac8x and reboot.",
+            "Power off, reseat the RASPIAUDIO board, then boot again.",
         )
     elif detected_hardware in ("8xout", "8xin8xout") and detected_hardware != hardware:
         add_check(
@@ -218,10 +216,10 @@ def build_health():
     add_check(
         checks,
         "usb_profile",
-        "USB 7.1 profile",
+        "USB 7.1 audio mode",
         usb_profile_ok,
         "error",
-        "USB gadget config is 8ch / 48 kHz / S32_LE." if usb_profile_ok else "USB gadget config is missing or not the V1 7.1 profile.",
+        "USB 7.1 audio mode is installed." if usb_profile_ok else "USB 7.1 audio mode is not installed correctly.",
         "Re-run the appliance installer, then reboot with the USB-C data cable connected.",
     )
 
@@ -230,11 +228,11 @@ def build_health():
     add_check(
         checks,
         "g_audio",
-        "USB audio gadget module",
+        "USB audio device",
         g_audio_loaded,
         "warning",
-        "g_audio is loaded." if g_audio_loaded else "g_audio is not loaded yet.",
-        "Reboot after enabling the gadget profile; Windows may also need the USB cable replugged.",
+        "USB audio device is started." if g_audio_loaded else "USB audio device is not started yet.",
+        "Press Restart USB, or reboot with the USB data cable connected.",
     )
 
     udc_states = usb_udc_states()
@@ -246,9 +244,9 @@ def build_health():
         "USB-C data link",
         configured,
         "warning",
-        f"USB gadget controller is configured by the host ({states_text})."
+        "USB audio is connected to the computer."
         if configured
-        else f"USB gadget controller is not configured by a host ({states_text or 'no UDC found'}).",
+        else "USB audio is not connected to the computer yet.",
         "Plug the data side of the USB-C splitter into the computer, then replug or reboot if the RASPIAUDIO USB sound card is not listed.",
     )
 
@@ -257,11 +255,11 @@ def build_health():
     add_check(
         checks,
         "uac2_capture",
-        "Pi USB audio input",
+        "Computer audio stream",
         uac2_present,
         "error",
-        "UAC2Gadget capture card is present." if uac2_present else "UAC2Gadget capture card is not visible to ALSA.",
-        "Check the USB-C data cable, splitter orientation, dwc2 overlay and reboot.",
+        "Computer audio stream is ready." if uac2_present else "Computer audio stream is not ready yet.",
+        "Check the USB-C data cable, splitter orientation and reboot.",
     )
 
     aplay = command_output("aplay", "-l")
@@ -272,8 +270,8 @@ def build_health():
         "8 analog outputs",
         analog_out,
         "error",
-        "RASPIAUDIO analog output card is present." if analog_out else "RASPIAUDIO analog output card is not visible.",
-        "Check the HAT, GPIO seating and dtoverlay=hifiberry-dac8x.",
+        "8 analog outputs are ready." if analog_out else "8 analog outputs are not detected yet.",
+        "Power off, reseat the RASPIAUDIO board, then boot again.",
     )
 
     if hardware == "8xin8xout":
@@ -308,11 +306,11 @@ def build_health():
     add_check(
         checks,
         "current_config",
-        "Active profile",
+        "Selected audio mode",
         config_ok,
         "error",
-        f"Current profile is {current_target}." if config_ok else "No active CamillaDSP profile link exists.",
-        "Use Factory reset audio or choose a mode from the dashboard.",
+        "Selected audio mode is ready." if config_ok else "No audio mode is selected.",
+        "Choose the recommended mode or use Reset audio settings under Advanced support.",
     )
 
     status = "ok"
