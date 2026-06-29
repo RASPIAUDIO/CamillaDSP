@@ -112,8 +112,11 @@ appliance therefore detects the board from ALSA:
 - playback card only: `8xout`
 - playback card + ADC capture card: `8xin8xout`
 
-The dashboard still has manual `8xout` and `8xin8xout` overrides for lab tests,
-but the beginner image should ship in `Auto detect`.
+The beginner image should ship in `Auto detect`. The public dashboard does not
+show a hardware selector; only the internal API/script override remains for lab
+tests. The dashboard displays the detected hardware status, shows only modes
+that make sense for that board, and greys out modes that need a missing runtime
+device such as the TOSLINK ALSA card.
 
 The old board-specific ADC module option is legacy/lab-only. Keep it empty
 unless a development driver explicitly requires it.

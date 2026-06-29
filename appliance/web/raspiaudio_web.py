@@ -17,31 +17,36 @@ MODES = [
         "id": "usb_7_1_to_8out",
         "title": "PC USB 7.1 to 8 analog outputs",
         "body": "Default safe passthrough. Use this first to prove every output.",
+        "requires": ["analog_out"],
     },
     {
         "id": "toslink_stereo",
         "title": "PC USB front L/R to optical TOSLINK stereo",
         "body": "Routes the USB front left/right channels to the Pi 5 GPIO12 optical output.",
+        "requires": ["toslink"],
     },
     {
         "id": "active_crossover_3way",
         "title": "Stereo active crossover to 8 outputs",
         "body": "Open miniDSP-style preset with safe gain, crossover, PEQ and delay placeholders.",
+        "requires": ["analog_out"],
     },
     {
         "id": "analog_input_monitor",
         "title": "8 analog inputs monitor/test",
         "body": "For RASPIAUDIO 8xIN+8xOUT only. Routes ADC inputs to analog outputs for lab checks.",
+        "hardware": ["8xin8xout"],
+        "requires": ["analog_in", "analog_out"],
     },
 ]
 
-HARDWARE = [
-    ("auto", "Auto detect"),
-    ("8xout", "RASPIAUDIO 8xOUT"),
-    ("8xin8xout", "RASPIAUDIO 8xIN+8xOUT"),
-]
-
 LAB_MODE_FILE = pathlib.Path("/etc/raspiaudio/lab-mode")
+
+REQUIREMENT_LABELS = {
+    "analog_out": "8 analog outputs not detected",
+    "analog_in": "8 analog inputs not detected",
+    "toslink": "TOSLINK output not detected",
+}
 
 
 def health_command():
@@ -143,6 +148,33 @@ def read_body(handler):
     return {key: values[-1] for key, values in parsed.items()}
 
 
+def check_ok_map(health):
+    checks = {}
+    for check in health.get("checks", []):
+        checks[str(check.get("key", ""))] = bool(check.get("ok", False))
+    return checks
+
+
+def mode_availability(mode, status, health):
+    hardware = str(status.get("hardware", "unknown"))
+    supported_hardware = mode.get("hardware")
+    if supported_hardware and hardware not in supported_hardware:
+        return "hidden", f"Requires {', '.join(supported_hardware)}"
+
+    checks = check_ok_map(health)
+    missing = []
+    for requirement in mode.get("requires", []):
+        ok = bool(checks.get(requirement, False))
+        if requirement == "toslink":
+            ok = ok or bool(status.get("spdif_present", False))
+        if not ok:
+            missing.append(REQUIREMENT_LABELS.get(requirement, requirement))
+
+    if missing:
+        return "disabled", "; ".join(missing)
+    return "enabled", ""
+
+
 def render_page():
     health = load_health()
     status = health.get("mode") if isinstance(health.get("mode"), dict) else load_status()
@@ -159,24 +191,30 @@ def render_page():
         if detected_hardware == "unknown":
             hardware_display = "auto -> unknown"
 
-    hardware_buttons = []
-    for value, label in HARDWARE:
-        selected = " selected" if value == hardware_config else ""
-        hardware_buttons.append(
-            f"""
-            <button class="pill{selected}" data-hardware="{html.escape(value)}">{html.escape(label)}</button>
-            """
-        )
-
     mode_cards = []
     for mode in MODES:
+        availability, reason = mode_availability(mode, status, health)
+        if availability == "hidden":
+            continue
         selected = " selected" if mode["id"] == active else ""
+        disabled = availability == "disabled"
+        disabled_class = " disabled" if disabled else ""
+        reason_html = (
+            f'<small>{html.escape(reason)}</small>'
+            if reason
+            else ""
+        )
+        if disabled:
+            button_html = '<button disabled>Unavailable</button>'
+        else:
+            button_html = f'<button data-mode="{html.escape(mode["id"])}">Choose mode</button>'
         mode_cards.append(
             f"""
-            <article class="card{selected}">
+            <article class="card{selected}{disabled_class}">
               <h3>{html.escape(mode["title"])}</h3>
               <p>{html.escape(mode["body"])}</p>
-              <button data-mode="{html.escape(mode["id"])}">Choose mode</button>
+              {reason_html}
+              {button_html}
             </article>
             """
         )
@@ -280,7 +318,7 @@ def render_page():
     }}
     .metric strong {{ font-size: 17px; }}
     h2 {{ margin: 24px 0 12px; font-size: 22px; }}
-    .hardware, .actions, .outputs {{
+    .actions, .outputs {{
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
@@ -293,6 +331,17 @@ def render_page():
     .card {{ padding: 18px; }}
     .card h3 {{ margin: 0 0 8px; font-size: 18px; }}
     .card p {{ min-height: 58px; color: var(--muted); line-height: 1.4; }}
+    .card small {{
+      display: block;
+      color: #7a4b00;
+      font-weight: 650;
+      min-height: 22px;
+      margin: 0 0 10px;
+    }}
+    .card.disabled {{
+      opacity: .55;
+      background: color-mix(in srgb, var(--panel) 78%, var(--line));
+    }}
     .selected {{ outline: 3px solid rgba(0,139,154,.22); border-color: var(--accent); }}
     button, .button {{
       appearance: none;
@@ -308,6 +357,12 @@ def render_page():
       align-items: center;
       justify-content: center;
       min-height: 38px;
+    }}
+    button:disabled {{
+      cursor: not-allowed;
+      border-color: var(--line);
+      background: #a8b2bc;
+      color: #edf2f6;
     }}
     button.secondary, .button.secondary {{
       background: transparent;
@@ -395,9 +450,6 @@ def render_page():
       <div class="checks">{health_html}</div>
     </section>
 
-    <h2>Hardware</h2>
-    <section class="hardware">{"".join(hardware_buttons)}</section>
-
     <h2>Audio Mode</h2>
     <section class="modes">{"".join(mode_cards)}</section>
 
@@ -440,15 +492,12 @@ def render_page():
         body = json.output || JSON.stringify(json, null, 2);
       }} catch (e) {{}}
       log.textContent = body || 'Done.';
-      if (res.ok && (path.includes('/mode') || path.includes('/hardware') || path.includes('/factory-reset'))) {{
+      if (res.ok && (path.includes('/mode') || path.includes('/factory-reset'))) {{
         setTimeout(() => window.location.reload(), 900);
       }}
     }}
     document.querySelectorAll('[data-mode]').forEach(btn => {{
       btn.addEventListener('click', () => post('/api/mode', {{mode: btn.dataset.mode}}));
-    }});
-    document.querySelectorAll('[data-hardware]').forEach(btn => {{
-      btn.addEventListener('click', () => post('/api/hardware', {{hardware: btn.dataset.hardware}}));
     }});
     document.querySelectorAll('[data-output]').forEach(btn => {{
       btn.addEventListener('click', () => post('/api/test-output', {{channel: btn.dataset.output}}));

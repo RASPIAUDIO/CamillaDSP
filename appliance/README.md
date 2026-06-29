@@ -99,6 +99,9 @@ The appliance dashboard exposes:
 - `PC USB front L/R to optical TOSLINK stereo`
 - `Stereo active crossover to 8 outputs`
 - `8 analog inputs monitor/test` for 8xIN+8xOUT
+- automatic hardware detection status; there is no beginner hardware selector
+- only modes supported by the detected board are shown
+- modes that need a missing runtime device, such as TOSLINK, are greyed out
 - system checks for USB gadget, analog output card, TOSLINK, services and
   `raspiaudio.local`
 - output tests
