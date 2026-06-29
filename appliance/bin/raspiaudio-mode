@@ -69,11 +69,11 @@ mode_config() {
 
 mode_label() {
   case "$1" in
-    usb_7_1_to_8out) echo "PC USB 7.1 to 8 analog outputs" ;;
-    toslink_stereo) echo "PC USB front L/R to optical TOSLINK stereo" ;;
-    toslink_stereo_fir) echo "PC USB front L/R to optical TOSLINK stereo with FIR load" ;;
-    active_crossover_3way) echo "Stereo active crossover to 8 analog outputs" ;;
-    analog_input_monitor) echo "8 analog inputs monitor/test" ;;
+    usb_7_1_to_8out) echo "PC USB 7.1 -> 8 analog outputs" ;;
+    toslink_stereo) echo "Optical TOSLINK stereo" ;;
+    toslink_stereo_fir) echo "Optical TOSLINK stereo with FIR load" ;;
+    active_crossover_3way) echo "Active crossover" ;;
+    analog_input_monitor) echo "Analog input test" ;;
     *) echo "$1" ;;
   esac
 }

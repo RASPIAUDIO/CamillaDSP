@@ -15,25 +15,25 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 MODES = [
     {
         "id": "usb_7_1_to_8out",
-        "title": "PC USB 7.1 to 8 analog outputs",
+        "title": "PC USB 7.1 -> 8 analog outputs",
         "body": "Default safe passthrough. Use this first to prove every output.",
         "requires": ["analog_out"],
     },
     {
         "id": "toslink_stereo",
-        "title": "PC USB front L/R to optical TOSLINK stereo",
-        "body": "Routes the USB front left/right channels to the Pi 5 GPIO12 optical output.",
+        "title": "Optical TOSLINK stereo",
+        "body": "Routes the USB front left/right channels to the Pi 5 optical output.",
         "requires": ["toslink"],
     },
     {
         "id": "active_crossover_3way",
-        "title": "Stereo active crossover to 8 outputs",
+        "title": "Active crossover",
         "body": "Open miniDSP-style preset with safe gain, crossover, PEQ and delay placeholders.",
         "requires": ["analog_out"],
     },
     {
         "id": "analog_input_monitor",
-        "title": "8 analog inputs monitor/test",
+        "title": "Analog input test",
         "body": "For RASPIAUDIO 8xIN+8xOUT only. Routes ADC inputs to analog outputs for lab checks.",
         "hardware": ["8xin8xout"],
         "requires": ["analog_in", "analog_out"],

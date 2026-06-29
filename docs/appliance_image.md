@@ -188,7 +188,7 @@ The release cleanup removes:
 It also resets the default mode to:
 
 ```text
-PC USB 7.1 to 8 analog outputs
+PC USB 7.1 -> 8 analog outputs
 ```
 
 Then image the SD card on your computer and publish:
@@ -227,7 +227,7 @@ Public tutorial:
 4. Connect USB-C data to the computer and power through the splitter.
 5. Boot.
 6. Open `http://raspiaudio.local`.
-7. Choose `PC USB 7.1 to 8 analog outputs`.
+7. Choose `PC USB 7.1 -> 8 analog outputs`.
 8. Click output tests.
 
 [Windows flashing video](assets/raspberry-pi-imager-custom-image-windows.mp4)

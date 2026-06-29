@@ -63,7 +63,7 @@ http://192.168.1.155
 
 ## First Audio Test
 
-1. In the dashboard, choose `PC USB 7.1 to 8 analog outputs`.
+1. In the dashboard, choose `PC USB 7.1 -> 8 analog outputs`.
 2. On the computer, select the USB sound card named like:
 
    ```text
@@ -78,9 +78,9 @@ http://192.168.1.155
 
 After the first test works, the dashboard can also enable:
 
-- `PC USB front L/R to optical TOSLINK stereo`.
-- `Stereo active crossover to 8 outputs`.
-- `8 analog inputs monitor/test` on 8xIN+8xOUT boards.
+- `Optical TOSLINK stereo`.
+- `Active crossover`.
+- `Analog input test` on 8xIN+8xOUT boards.
 
 Use the `Advanced CamillaDSP editor` button only when you want to edit filters,
 mixers, gains, delays, PEQ, FIR, or crossover settings.
