@@ -304,7 +304,7 @@ def render_page():
 
     restart_usb_button = '<button data-action="restart-usb" class="secondary">Restart USB</button>'
     output_buttons = "".join(
-        f'<button data-output="{idx}">OUT{idx}</button>' for idx in range(1, 9)
+        f'<button data-output="{idx}">Test OUT{idx}</button>' for idx in range(1, 9)
     )
 
     recommended = MODES[0]
