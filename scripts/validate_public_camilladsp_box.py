@@ -14,6 +14,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
+from datetime import datetime, timezone
 
 
 DEFAULT_PUBLIC_DIR = pathlib.Path("public/camilladsp-box")
@@ -269,10 +270,47 @@ def make_package(args: argparse.Namespace, version: str, results: list[dict]) ->
     public_dir = pathlib.Path(args.public_dir)
     package = pathlib.Path(args.package)
     package.parent.mkdir(parents=True, exist_ok=True)
+    missing_allowed = [
+        item
+        for item in results
+        if item["ok"] and "missing locally, allowed for draft validation" in item["message"]
+    ]
+    manifest = {
+        "product": "RASPIAUDIO CamillaDSP Box",
+        "version": version,
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "upload_target": "https://raspiaudio.com/camilladsp-box/",
+        "strict_release_ready": not failures and not missing_allowed,
+        "validation_results": results,
+    }
+    publishing_lines = [
+        "RASPIAUDIO CamillaDSP Box public page package",
+        f"Version: {version}",
+        "Upload target: https://raspiaudio.com/camilladsp-box/",
+        "",
+        "Upload all files from this ZIP into the camilladsp-box folder on raspiaudio.com.",
+        "After upload, verify with:",
+        "python3 scripts/validate_public_camilladsp_box.py --base-url https://raspiaudio.com/camilladsp-box",
+        "",
+    ]
+    if failures:
+        publishing_lines.append("Status: NOT READY FOR PUBLIC RELEASE")
+        publishing_lines.append("Blocking validation failures:")
+        publishing_lines.extend(f"- {item['key']}: {item['message']} {item.get('evidence', '')}".rstrip() for item in failures)
+    elif missing_allowed:
+        publishing_lines.append("Status: DRAFT PACKAGE")
+        publishing_lines.append("The public page is structurally valid, but these release files are still missing:")
+        publishing_lines.extend(f"- {item['evidence']}" for item in missing_allowed)
+    else:
+        publishing_lines.append("Status: READY TO UPLOAD")
+        publishing_lines.append("Local strict validation passed, including image, SHA256 and Imager JSON files.")
+    publishing_text = "\n".join(publishing_lines) + "\n"
     with zipfile.ZipFile(package, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in public_dir.rglob("*"):
             if path.is_file():
                 zf.write(path, path.relative_to(public_dir))
+        zf.writestr("PUBLISHING.txt", publishing_text)
+        zf.writestr("validation-results.json", json.dumps(manifest, indent=2) + "\n")
     print(f"PACKAGED {package} for RASPIAUDIO CamillaDSP Box {version}")
 
 

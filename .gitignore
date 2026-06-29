@@ -9,3 +9,4 @@ prototypes/pi5_spdif_gpio/kernel/Module.symvers
 prototypes/pi5_spdif_gpio/kernel/modules.order
 __pycache__/
 *.pyc
+artifacts/

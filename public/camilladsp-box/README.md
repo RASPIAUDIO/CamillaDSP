@@ -57,6 +57,9 @@ The appliance `Update system` button reads:
 https://raspiaudio.com/camilladsp-box/releases.json
 ```
 
+The generated ZIP includes `PUBLISHING.txt` and `validation-results.json` so the
+upload handoff shows the target URL, validation state and missing release files.
+
 If a beta image needs another channel, write the URL to:
 
 ```text
