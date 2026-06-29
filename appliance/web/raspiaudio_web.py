@@ -321,7 +321,9 @@ def render_page():
         f'<small>{html.escape(recommended_reason)}</small>' if recommended_reason else ""
     )
     audio_test_actions = f"""
+      <p class="recommended-inline"><strong>{html.escape(recommended["title"])}</strong><br>{html.escape(recommended["body"])}</p>
       <div class="actions">{recommended_button}</div>
+      {recommended_reason_html}
       <div class="outputs">{output_buttons}</div>
     """
 
@@ -411,12 +413,8 @@ def render_page():
             for check in blocking_checks
         )
     else:
-        alert_html = """
-        <article class="alert ok">
-          <strong>Ready</strong>
-          <p>All required checks are passing.</p>
-        </article>
-        """
+        alert_html = ""
+    alerts_section = f'<section class="alerts">{alert_html}</section>' if alert_html else ""
 
     visible_support_actions = """
         <button data-action="fix-audio">Fix audio</button>
@@ -531,6 +529,13 @@ def render_page():
     }}
     .step h2 {{ margin: 0 0 7px; font-size: 20px; }}
     .step p {{ margin: 0 0 12px; color: var(--muted); line-height: 1.35; }}
+    .recommended-inline {{
+      margin-top: 4px;
+      color: var(--muted);
+    }}
+    .recommended-inline strong {{
+      color: var(--text);
+    }}
     h2 {{ margin: 24px 0 12px; font-size: 22px; }}
     .actions, .outputs {{
       display: flex;
@@ -541,20 +546,6 @@ def render_page():
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 14px;
-    }}
-    .recommended {{
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      gap: 16px;
-    }}
-    .recommended h2 {{ margin: 0 0 8px; }}
-    .recommended p {{ margin: 0; color: var(--muted); line-height: 1.4; }}
-    .recommended small {{
-      display: block;
-      margin-top: 8px;
-      color: #7a4b00;
-      font-weight: 650;
     }}
     .card {{ padding: 18px; }}
     .card h3 {{ margin: 0 0 8px; font-size: 18px; }}
@@ -681,7 +672,7 @@ def render_page():
       .step-index {{ background: #22313a; color: #d9f7fb; }}
     }}
     @media (max-width: 760px) {{
-      .header-inner, .recommended {{
+      .header-inner {{
         display: block;
       }}
       .version {{
@@ -711,31 +702,21 @@ def render_page():
       {step_card(3, "Audio test", audio_message, audio_test_ok, audio_test_actions)}
     </section>
 
-    <section class="panel recommended">
-      <div>
-        <h2>Recommended mode</h2>
-        <p><strong>{html.escape(recommended["title"])}</strong></p>
-        <p>{html.escape(recommended["body"])}</p>
-        {recommended_reason_html}
-      </div>
-      <div class="actions">{recommended_button}</div>
-    </section>
-
-    <section class="alerts">{alert_html}</section>
+    {alerts_section}
 
     <details class="panel">
       <summary>More modes</summary>
       <section class="modes">{"".join(advanced_cards)}</section>
     </details>
 
-    <section class="panel">
-      <h2>Support</h2>
+    <details class="panel">
+      <summary>Fix audio or update system</summary>
       <div class="actions">
         {visible_support_actions}
       </div>
       {advanced_support}
       <pre id="log">Ready.</pre>
-    </section>
+    </details>
 
     <details class="panel">
       <summary>System checks</summary>
