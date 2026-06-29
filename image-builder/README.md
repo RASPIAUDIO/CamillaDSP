@@ -38,6 +38,29 @@ cd ~/CamillaDSP
 ./image-builder/build_image.sh
 ```
 
+For the public release path, prefer the wrapper that builds the image, stages
+the public page files, and creates the strict upload ZIP:
+
+```bash
+cd ~/CamillaDSP
+./image-builder/build_public_release.sh
+```
+
+To pin the public release filename:
+
+```bash
+RASPIAUDIO_RELEASE_VERSION=2026.06.29 ./image-builder/build_public_release.sh
+```
+
+If the image already exists, skip the build and only stage/package it:
+
+```bash
+./image-builder/build_public_release.sh \
+  --skip-build \
+  --image ~/rpi-image-gen/work/deploy-v2.7.0/raspiaudio-dspbox-pi5-2026.06.29.img.xz \
+  --raw-image ~/rpi-image-gen/work/image-raspiaudio-dspbox-pi5/raspiaudio-dspbox-pi5.img
+```
+
 If `rpi-image-gen` is elsewhere:
 
 ```bash

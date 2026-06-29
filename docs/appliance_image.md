@@ -314,7 +314,7 @@ cd ~/rpi-image-gen
 sudo ./install_deps.sh
 
 cd ~/CamillaDSP
-./image-builder/build_image.sh
+./image-builder/build_public_release.sh
 ```
 
 Set `RASPIAUDIO_RELEASE_VERSION=YYYY.MM.DD` when you want an exact public
@@ -332,6 +332,7 @@ The RASPIAUDIO wrapper creates the publishable Raspberry Pi Imager artefact in:
 ~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz
 ~/rpi-image-gen/work/deploy-*/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz.sha256
 ~/rpi-image-gen/work/deploy-*/raspiaudio-imager-repository-YYYY.MM.DD.json
+artifacts/camilladsp-box-public-YYYY.MM.DD.zip
 ```
 
 The Imager repository JSON is only generated when
@@ -348,18 +349,19 @@ The generated image must still pass the validation checklist above before it is
 published as a beta or release image. Use `CREATE_XZ=0` only for faster local
 lab builds where a release artefact is not needed.
 
-After validation, stage the public site bundle from the real image:
+If the image was already built and validated, stage the public site bundle from
+the real image without rebuilding:
 
 ```bash
-python3 image-builder/stage_public_release.py \
+./image-builder/build_public_release.sh \
+  --skip-build \
   --image ~/rpi-image-gen/work/deploy-v2.7.0/raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz \
-  --raw-image ~/rpi-image-gen/work/image-raspiaudio-dspbox-pi5/raspiaudio-dspbox-pi5.img \
-  --version YYYY.MM.DD
+  --raw-image ~/rpi-image-gen/work/image-raspiaudio-dspbox-pi5/raspiaudio-dspbox-pi5.img
 ```
 
 That command writes the public `downloads/` files, updates `releases.json`,
-updates the `Download image` link and validates the local public bundle before
-upload.
+updates the `Download image` link, validates the local public bundle, and
+creates `artifacts/camilladsp-box-public-YYYY.MM.DD.zip` for upload.
 
 Current candidate validation status:
 [appliance_validation_status_2026_06_28.md](appliance_validation_status_2026_06_28.md)
