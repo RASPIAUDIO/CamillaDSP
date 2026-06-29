@@ -303,6 +303,7 @@ def render_page():
         """
 
     restart_usb_button = '<button data-action="restart-usb" class="secondary">Restart USB</button>'
+    test_all_outputs_button = '<button data-action="test-all-outputs" class="secondary">Test all outputs</button>'
     output_buttons = "".join(
         f'<button data-output="{idx}">Test OUT{idx}</button>' for idx in range(1, 9)
     )
@@ -322,7 +323,7 @@ def render_page():
     )
     audio_test_actions = f"""
       <p class="recommended-inline"><strong>{html.escape(recommended["title"])}</strong><br>{html.escape(recommended["body"])}</p>
-      <div class="actions">{recommended_button}</div>
+      <div class="actions">{recommended_button}{test_all_outputs_button}</div>
       {recommended_reason_html}
       <div class="outputs">{output_buttons}</div>
     """
@@ -756,6 +757,7 @@ def render_page():
     }});
     bind('[data-action="test-toslink"]', () => post('/api/test-toslink', {{}}));
     bind('[data-action="test-inputs"]', () => post('/api/test-inputs', {{}}));
+    bind('[data-action="test-all-outputs"]', () => post('/api/test-outputs', {{}}));
     bind('[data-action="restart-usb"]', () => post('/api/restart-usb-gadget', {{}}));
     bind('[data-action="fix-audio"]', () => post('/api/fix-audio', {{}}));
     bind('[data-action="update-system"]', () => post('/api/update-system', {{}}));
@@ -871,6 +873,10 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/test-output":
             channel = str(body.get("channel", ""))
             result = run_command(["/usr/local/sbin/raspiaudio-test-audio", "output", channel], timeout=30)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/test-outputs":
+            result = run_command(["/usr/local/sbin/raspiaudio-test-audio", "outputs"], timeout=120)
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/test-toslink":

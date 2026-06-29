@@ -11,6 +11,7 @@ usage() {
   cat <<'EOF'
 Usage:
   raspiaudio-test-audio output <1-8>
+  raspiaudio-test-audio outputs
   raspiaudio-test-audio toslink
   raspiaudio-test-audio inputs
 EOF
@@ -78,6 +79,16 @@ test_output() {
   run_with_hardware_device speaker-test -D "$ANALOG_DEVICE" -c 8 -r 48000 -F S32_LE -t sine -f 1000 -s "$ch" -l 1
 }
 
+test_outputs() {
+  need_cmd speaker-test
+  suspend_camilla
+  trap resume_camilla EXIT
+  for ch in 1 2 3 4 5 6 7 8; do
+    echo "Testing OUT${ch}"
+    speaker-test -D "$ANALOG_DEVICE" -c 8 -r 48000 -F S32_LE -t sine -f 1000 -s "$ch" -l 1
+  done
+}
+
 test_toslink() {
   need_cmd speaker-test
   ensure_spdif_card
@@ -94,6 +105,9 @@ test_inputs() {
 case "${1:-}" in
   output)
     test_output "${2:-}"
+    ;;
+  outputs)
+    test_outputs
     ;;
   toslink)
     test_toslink
