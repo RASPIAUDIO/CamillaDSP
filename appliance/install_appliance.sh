@@ -58,9 +58,9 @@ install_packages() {
     curl \
     git \
     kmod \
+    linux-headers-rpi-2712 \
     nginx \
     python3 \
-    raspberrypi-kernel-headers \
     tar \
     wget \
     zip \

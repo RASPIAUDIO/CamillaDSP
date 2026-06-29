@@ -62,7 +62,7 @@ Run this on the Raspberry Pi 5:
 
 ```bash
 sudo apt update
-sudo apt install -y raspberrypi-kernel-headers build-essential alsa-utils ffmpeg
+sudo apt install -y build-essential linux-headers-rpi-2712 alsa-utils ffmpeg
 
 git clone https://github.com/RASPIAUDIO/CamillaDSP.git
 cd CamillaDSP/prototypes/pi5_spdif_gpio

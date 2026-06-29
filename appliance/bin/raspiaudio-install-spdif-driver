@@ -30,12 +30,36 @@ install_kernel_headers() {
     apt-get update
     APT_UPDATED=1
   fi
-  apt-get install -y --no-install-recommends build-essential raspberrypi-kernel-headers
+  apt-get install -y --no-install-recommends build-essential
+
+  local krel
+  local pkg
+  local installed=1
+  local candidates=()
+  krel="$(uname -r)"
+  candidates+=("linux-headers-${krel}")
+  case "$krel" in
+    *rpi-2712*) candidates+=("linux-headers-rpi-2712") ;;
+    *rpi-v8*) candidates+=("linux-headers-rpi-v8") ;;
+  esac
+  candidates+=("raspberrypi-kernel-headers")
+
+  for pkg in "${candidates[@]}"; do
+    if ! apt-cache show "$pkg" >/dev/null 2>&1; then
+      echo "Kernel header package not found in apt: $pkg"
+      continue
+    fi
+    echo "Installing kernel header package: $pkg"
+    apt-get install -y --no-install-recommends "$pkg" && installed=0
+    [ -d "$KDIR" ] && return 0
+  done
+
+  return "$installed"
 }
 
 if [ ! -d "$KDIR" ]; then
   echo "Missing kernel build directory: $KDIR"
-  echo "Trying to install build-essential and raspberrypi-kernel-headers..."
+  echo "Trying to install build-essential and matching Raspberry Pi kernel headers..."
   install_kernel_headers || true
 fi
 
