@@ -614,7 +614,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/test-toslink":
-            result = run_command(["/usr/local/sbin/raspiaudio-test-audio", "toslink"], timeout=120)
+            result = run_command(["/usr/local/sbin/raspiaudio-test-audio", "toslink"], timeout=600)
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/test-inputs":

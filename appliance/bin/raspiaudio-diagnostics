@@ -37,6 +37,9 @@ run arecord arecord -l
 run proc-asound-cards sh -c 'cat /proc/asound/cards'
 run proc-asound-devices sh -c 'cat /proc/asound/devices'
 run lsmod lsmod
+run kernel-build sh -c 'echo "kernel=$(uname -r)"; ls -ld "/lib/modules/$(uname -r)/build" 2>&1 || true; echo; echo "module trees:"; ls -1 /lib/modules 2>&1 || true'
+run kernel-header-packages sh -c 'dpkg -l build-essential raspberrypi-kernel-headers 2>&1 || true'
+run spdif-module-info sh -c 'modinfo raspiaudio_spdif_pio 2>&1 || true; echo; modprobe -n -v raspiaudio_spdif_pio 2>&1 || true'
 run usb-gadget sh -c 'ls -R /sys/kernel/config/usb_gadget 2>/dev/null || true'
 run udc sh -c 'ls -l /sys/class/udc 2>/dev/null || true'
 run dmesg-audio sh -c "dmesg | grep -i -E 'raspiaudio|camilla|snd|alsa|spdif|toslink|uac|g_audio|dwc2|hifiberry|xrun|underrun|error' || true"

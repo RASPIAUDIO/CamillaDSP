@@ -9,6 +9,7 @@ GPIO="${SPDIF_GPIO:-12}"
 DRIVE_MA="${SPDIF_DRIVE_MA:-8}"
 ZERO_ON_UNDERRUN="${SPDIF_ZERO_ON_UNDERRUN:-1}"
 STAMP="/etc/raspiaudio/spdif-driver-installed"
+APT_UPDATED=0
 
 if [ "$(id -u)" -ne 0 ]; then
   exec sudo -E bash "$0" "$@"
@@ -20,9 +21,30 @@ if [ ! -f "$KERNEL_DIR/${MODULE_NAME}.c" ]; then
 fi
 
 KDIR="${KDIR:-/lib/modules/$(uname -r)/build}"
+install_kernel_headers() {
+  [ "${RASPIAUDIO_INSTALL_HEADERS:-1}" = "0" ] && return 1
+  command -v apt-get >/dev/null 2>&1 || return 1
+
+  export DEBIAN_FRONTEND=noninteractive
+  if [ "$APT_UPDATED" = "0" ]; then
+    apt-get update
+    APT_UPDATED=1
+  fi
+  apt-get install -y --no-install-recommends build-essential raspberrypi-kernel-headers
+}
+
 if [ ! -d "$KDIR" ]; then
-  echo "Missing kernel build directory: $KDIR" >&2
-  echo "Install raspberrypi-kernel-headers for the running kernel." >&2
+  echo "Missing kernel build directory: $KDIR"
+  echo "Trying to install build-essential and raspberrypi-kernel-headers..."
+  install_kernel_headers || true
+fi
+
+if [ ! -d "$KDIR" ]; then
+  echo "Missing kernel build directory after header install attempt: $KDIR" >&2
+  echo "Running kernel: $(uname -r)" >&2
+  echo "Available module trees:" >&2
+  ls -1 /lib/modules >&2 || true
+  echo "Install matching Raspberry Pi kernel headers, then rerun raspiaudio-install-spdif-driver." >&2
   exit 1
 fi
 
@@ -43,7 +65,7 @@ depmod
 if [ "${RASPIAUDIO_IMAGE_BUILD:-0}" != "1" ]; then
   modprobe rp1-pio || true
   modprobe -r "$MODULE_NAME" 2>/dev/null || true
-  modprobe "$MODULE_NAME" gpio="$GPIO" drive_ma="$DRIVE_MA" zero_on_underrun="$ZERO_ON_UNDERRUN" || true
+  modprobe "$MODULE_NAME" gpio="$GPIO" drive_ma="$DRIVE_MA" zero_on_underrun="$ZERO_ON_UNDERRUN"
 fi
 
 install -d -m 0755 /etc/raspiaudio

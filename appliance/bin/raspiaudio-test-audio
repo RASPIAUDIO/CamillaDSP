@@ -55,7 +55,7 @@ ensure_spdif_card() {
 
   echo "RASPISPDIF card is not visible; trying to build/load the GPIO12 optical driver."
   if [ -x /usr/local/sbin/raspiaudio-install-spdif-driver ]; then
-    /usr/local/sbin/raspiaudio-install-spdif-driver || true
+    /usr/local/sbin/raspiaudio-install-spdif-driver
   fi
   if command -v systemctl >/dev/null 2>&1; then
     systemctl restart raspiaudio-spdif.service || true
