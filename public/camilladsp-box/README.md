@@ -52,10 +52,13 @@ python3 scripts/validate_public_camilladsp_box.py \
 For a draft handoff zip before the final image exists:
 
 ```bash
-python3 scripts/validate_public_camilladsp_box.py \
-  --allow-missing-downloads \
-  --package artifacts/camilladsp-box-public-draft.zip \
-  --allow-package-with-failures
+python3 scripts/package_public_camilladsp_box.py
+```
+
+For the real public release after the image, SHA256 and Imager JSON are staged:
+
+```bash
+python3 scripts/package_public_camilladsp_box.py --strict
 ```
 
 The appliance `Update system` button reads:

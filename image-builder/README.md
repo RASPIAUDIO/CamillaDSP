@@ -144,6 +144,19 @@ The first command validates the local public bundle. The second command must
 return HTTP 200 for the uploaded page, release channel, image, SHA256 file, and
 Imager repository JSON.
 
+To create an upload ZIP instead of manually selecting files:
+
+```bash
+python3 scripts/package_public_camilladsp_box.py --strict
+```
+
+During page layout work, before the image exists, create a draft handoff ZIP
+with:
+
+```bash
+python3 scripts/package_public_camilladsp_box.py
+```
+
 ## Raspberry Pi Imager Repository
 
 `raspiaudio-imager-repository.example.json` is a starter template for a custom
