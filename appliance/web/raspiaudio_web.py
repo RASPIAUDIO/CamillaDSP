@@ -718,6 +718,7 @@ def render_page():
         <p>{html.escape(recommended["body"])}</p>
         {recommended_reason_html}
       </div>
+      <div class="actions">{recommended_button}</div>
     </section>
 
     <section class="alerts">{alert_html}</section>
