@@ -24,6 +24,41 @@ For development, start with a blank microSD card and Raspberry Pi Imager:
 
 This development image is only a working master. It must not be published.
 
+For faster lab iteration, enable the hidden lab mode on the test image only:
+
+```bash
+sudo touch /etc/raspiaudio/lab-mode
+sudo systemctl restart raspiaudio-web.service
+```
+
+Then the dashboard shows `Lab update from GitHub`. It pulls the latest
+`main` branch into `/opt/raspiaudio-camilladsp`, copies the dashboard/scripts,
+profiles and systemd units, then restarts the audio services. This is much
+faster than reflashing the SD card after every small change.
+
+Equivalent shell command:
+
+```bash
+sudo raspiaudio-dev-update fast
+```
+
+Use a full reinstall only when package/install logic changed:
+
+```bash
+sudo raspiaudio-dev-update full
+```
+
+The release cleanup removes `/etc/raspiaudio/lab-mode`, so this button is not
+visible in the public beginner image.
+
+Network boot is possible on Raspberry Pi 5 for deeper kernel/rootfs work, but
+it is heavier than necessary for ordinary CamillaDSP/dashboard iteration. For
+our lab tests, prefer this workflow:
+
+```text
+flash once -> enable lab mode -> click Lab update from GitHub -> retest
+```
+
 ## What Gets Installed
 
 Run:
@@ -52,6 +87,7 @@ The appliance installer adds:
 - Mode switcher through `/etc/camilladsp/current.yml`.
 - Diagnostics zip generator.
 - Release-candidate validator.
+- Hidden lab updater for development images.
 - Beginner health checks for USB gadget, analog output card, TOSLINK, services
   and `raspiaudio.local`.
 

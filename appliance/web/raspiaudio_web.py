@@ -40,6 +40,8 @@ HARDWARE = [
     ("8xin8xout", "RASPIAUDIO 8xIN+8xOUT"),
 ]
 
+LAB_MODE_FILE = pathlib.Path("/etc/raspiaudio/lab-mode")
+
 
 def health_command():
     env_cmd = os.environ.get("RASPIAUDIO_HEALTH_CMD")
@@ -147,6 +149,9 @@ def render_page():
     output_buttons = "".join(
         f'<button data-output="{idx}">OUT{idx}</button>' for idx in range(1, 9)
     )
+    lab_button = ""
+    if LAB_MODE_FILE.exists():
+        lab_button = '<button data-action="lab-update" class="secondary">Lab update from GitHub</button>'
 
     checks = health.get("checks", [])
     if checks:
@@ -377,6 +382,7 @@ def render_page():
         <button data-action="restart-usb" class="secondary">Restart USB gadget</button>
         <button data-action="factory-reset" class="secondary">Factory reset audio</button>
         <button data-action="validate-release" class="secondary">Run release checks</button>
+        {lab_button}
         <a class="button secondary" href="/api/diagnostics">Download diagnostics zip</a>
         <a class="button secondary" href="http://raspiaudio.local:5005/gui/index.html">Advanced CamillaDSP editor</a>
       </div>
@@ -418,6 +424,10 @@ def render_page():
     document.querySelector('[data-action="restart-usb"]').addEventListener('click', () => post('/api/restart-usb-gadget', {{}}));
     document.querySelector('[data-action="factory-reset"]').addEventListener('click', () => post('/api/factory-reset', {{}}));
     document.querySelector('[data-action="validate-release"]').addEventListener('click', () => post('/api/validate-release', {{}}));
+    const labUpdate = document.querySelector('[data-action="lab-update"]');
+    if (labUpdate) {{
+      labUpdate.addEventListener('click', () => post('/api/lab-update', {{}}));
+    }}
   </script>
 </body>
 </html>
@@ -499,6 +509,19 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/validate-release":
             result = run_command(["/usr/local/sbin/raspiaudio-validate-release"], timeout=60)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/lab-update":
+            if not LAB_MODE_FILE.exists():
+                self.send_json(
+                    HTTPStatus.FORBIDDEN,
+                    {
+                        "ok": False,
+                        "output": "Lab update is disabled. Create /etc/raspiaudio/lab-mode only on test images.",
+                    },
+                )
+                return
+            result = run_command(["/usr/local/sbin/raspiaudio-dev-update", "fast"], timeout=120)
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/test-output":

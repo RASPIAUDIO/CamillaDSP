@@ -41,6 +41,7 @@ find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true
 rm -f /root/.bash_history /home/*/.bash_history 2>/dev/null || true
 rm -rf /root/.ssh /home/*/.ssh 2>/dev/null || true
 rm -f /etc/ssh/ssh_host_* 2>/dev/null || true
+rm -f /etc/raspiaudio/lab-mode 2>/dev/null || true
 
 rm -f /etc/machine-id
 touch /etc/machine-id

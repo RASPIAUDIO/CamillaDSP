@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(id -u)" -ne 0 ]; then
+  exec sudo -E bash "$0" "$@"
+fi
+
+MODE="${1:-fast}"
+REPO_URL="${RASPIAUDIO_DEV_REPO_URL:-https://github.com/RASPIAUDIO/CamillaDSP.git}"
+REPO_DIR="${RASPIAUDIO_DEV_REPO_DIR:-/opt/raspiaudio-camilladsp}"
+BRANCH="${RASPIAUDIO_DEV_BRANCH:-main}"
+
+usage() {
+  cat <<EOF
+Usage:
+  raspiaudio-dev-update [fast|full]
+
+Environment:
+  RASPIAUDIO_DEV_REPO_URL   Git repository to pull from
+  RASPIAUDIO_DEV_REPO_DIR   Local checkout, default /opt/raspiaudio-camilladsp
+  RASPIAUDIO_DEV_BRANCH     Branch, default main
+
+This is a lab tool. Do not expose it in a public beginner image unless
+/etc/raspiaudio/lab-mode is intentionally present.
+EOF
+}
+
+if [ "$MODE" = "-h" ] || [ "$MODE" = "--help" ]; then
+  usage
+  exit 0
+fi
+
+case "$MODE" in
+  fast|full) ;;
+  *) usage >&2; exit 2 ;;
+esac
+
+ensure_checkout() {
+  if [ -d "$REPO_DIR/.git" ]; then
+    git -C "$REPO_DIR" fetch --prune origin "$BRANCH"
+    git -C "$REPO_DIR" checkout "$BRANCH"
+    git -C "$REPO_DIR" pull --ff-only origin "$BRANCH"
+  else
+    rm -rf "$REPO_DIR"
+    git clone --branch "$BRANCH" "$REPO_URL" "$REPO_DIR"
+  fi
+}
+
+restart_if_available() {
+  local service="$1"
+  systemctl list-unit-files "$service" >/dev/null 2>&1 || return 0
+  systemctl restart "$service" || true
+}
+
+install_fast() {
+  cd "$REPO_DIR"
+
+  install -d -m 0755 /usr/local/sbin /opt/raspiaudio-web /etc/raspiaudio
+  install -m 0755 appliance/bin/raspiaudio-mode /usr/local/sbin/raspiaudio-mode
+  install -m 0755 appliance/bin/raspiaudio-health /usr/local/sbin/raspiaudio-health
+  install -m 0755 appliance/bin/raspiaudio-diagnostics /usr/local/sbin/raspiaudio-diagnostics
+  install -m 0755 appliance/bin/raspiaudio-restart-usb-gadget /usr/local/sbin/raspiaudio-restart-usb-gadget
+  install -m 0755 appliance/bin/raspiaudio-test-audio /usr/local/sbin/raspiaudio-test-audio
+  install -m 0755 appliance/bin/raspiaudio-validate-release /usr/local/sbin/raspiaudio-validate-release
+  install -m 0755 appliance/bin/raspiaudio-dev-update /usr/local/sbin/raspiaudio-dev-update
+  install -m 0755 appliance/web/raspiaudio_web.py /opt/raspiaudio-web/raspiaudio_web.py
+
+  install -d -o raspiaudio -g audio -m 0775 /etc/camilladsp /etc/camilladsp/coeffs
+  install -m 0644 -o raspiaudio -g audio configs/*.yml /etc/camilladsp/
+  if [ -f scripts/generate_fir_load_coeffs.py ]; then
+    python3 scripts/generate_fir_load_coeffs.py /etc/camilladsp/coeffs/fir_load_4096_taps.txt
+  fi
+  chown -R raspiaudio:audio /etc/camilladsp
+
+  install -m 0644 appliance/systemd/camilladsp-appliance.service /etc/systemd/system/camilladsp.service
+  install -m 0644 appliance/systemd/raspiaudio-web.service /etc/systemd/system/raspiaudio-web.service
+  install -m 0644 appliance/systemd/raspiaudio-spdif.service /etc/systemd/system/raspiaudio-spdif.service
+  install -m 0644 appliance/systemd/raspiaudio-spdif-firstboot.service /etc/systemd/system/raspiaudio-spdif-firstboot.service
+
+  install -m 0644 appliance/nginx/raspiaudio.conf /etc/nginx/sites-available/raspiaudio.conf
+  ln -sfn /etc/nginx/sites-available/raspiaudio.conf /etc/nginx/sites-enabled/raspiaudio.conf
+  rm -f /etc/nginx/sites-enabled/default
+
+  install -d -m 0755 /opt/raspiaudio-spdif-gpio
+  rm -rf /opt/raspiaudio-spdif-gpio/kernel
+  cp -a prototypes/pi5_spdif_gpio/kernel /opt/raspiaudio-spdif-gpio/
+  install -m 0755 appliance/bin/raspiaudio-install-spdif-driver /usr/local/sbin/raspiaudio-install-spdif-driver
+
+  systemctl daemon-reload
+  systemctl enable avahi-daemon nginx raspiaudio-spdif.service camilladsp.service camillagui.service raspiaudio-web.service >/dev/null 2>&1 || true
+  restart_if_available nginx
+  restart_if_available raspiaudio-spdif.service
+  restart_if_available camilladsp.service
+  restart_if_available camillagui.service
+  restart_if_available raspiaudio-web.service
+}
+
+install_full() {
+  cd "$REPO_DIR"
+  REBOOT_NOW=0 ./appliance/install_appliance.sh
+}
+
+echo "Updating RASPIAUDIO lab checkout:"
+echo "  repo:   $REPO_URL"
+echo "  branch: $BRANCH"
+echo "  dir:    $REPO_DIR"
+echo "  mode:   $MODE"
+
+ensure_checkout
+
+if [ "$MODE" = "full" ]; then
+  install_full
+else
+  install_fast
+fi
+
+echo
+echo "Lab update complete."
+echo "Commit: $(git -C "$REPO_DIR" rev-parse --short HEAD 2>/dev/null || true)"
+echo "Open:   http://raspiaudio.local/"
