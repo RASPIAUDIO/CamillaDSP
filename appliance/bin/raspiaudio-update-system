@@ -95,6 +95,7 @@ PY
 print_fallback() {
   local url="$1"
   cat <<EOF
+Update system
 RASPIAUDIO CamillaDSP Box
 Current version: $(current_version)
 
@@ -112,8 +113,8 @@ EOF
 
   if [ -f "$FALLBACK_CHANGELOG" ]; then
     echo
-    echo "Bundled changelog:"
-    sed -n '1,120p' "$FALLBACK_CHANGELOG"
+    echo "What's included in this image:"
+    awk '/^- / { gsub("`", ""); print }' "$FALLBACK_CHANGELOG" | sed -n '1,8p'
   fi
 }
 
