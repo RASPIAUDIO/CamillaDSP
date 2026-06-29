@@ -125,6 +125,19 @@ raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz
 raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz.sha256
 ```
 
+Copy those files plus the generated Imager JSON into `public/camilladsp-box/`,
+then run:
+
+```bash
+python3 scripts/validate_public_camilladsp_box.py
+python3 scripts/validate_public_camilladsp_box.py \
+  --base-url https://raspiaudio.com/camilladsp-box
+```
+
+The first command validates the local public bundle. The second command must
+return HTTP 200 for the uploaded page, release channel, image, SHA256 file, and
+Imager repository JSON.
+
 ## Raspberry Pi Imager Repository
 
 `raspiaudio-imager-repository.example.json` is a starter template for a custom

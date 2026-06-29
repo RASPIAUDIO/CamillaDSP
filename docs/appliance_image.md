@@ -198,6 +198,25 @@ raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz
 raspiaudio-dspbox-pi5-YYYY.MM.DD.img.xz.sha256
 ```
 
+Copy the final files into `public/camilladsp-box/`, together with the matching
+`raspiaudio-imager-repository-YYYY.MM.DD.json`, then run the public page gate:
+
+```bash
+python3 scripts/validate_public_camilladsp_box.py
+```
+
+After uploading the folder to the website, verify the live beginner entry point
+and release channel:
+
+```bash
+python3 scripts/validate_public_camilladsp_box.py \
+  --base-url https://raspiaudio.com/camilladsp-box
+```
+
+The strict public gate must pass before claiming that the appliance image is
+publicly ready. It checks the beginner page copy, the 8-step setup, required
+assets, image/SHA filenames, SHA256 match, Imager JSON, and live download URLs.
+
 ## Beginner Tutorial
 
 Public tutorial:
