@@ -419,17 +419,11 @@ def render_page():
         <button data-action="update-system" class="secondary">Update system</button>
         <a class="button secondary" href="/api/diagnostics">Download diagnostics zip</a>
     """
-    lab_release_button = (
-        '<button data-action="validate-release" class="secondary">Run release checks</button>'
-        if LAB_MODE_FILE.exists()
-        else ""
-    )
     advanced_support = f"""
       <details style="margin-top: 12px">
         <summary>Advanced support</summary>
         <div class="actions" style="margin-top: 12px">
           <button data-action="factory-reset" class="secondary">Reset audio settings</button>
-          {lab_release_button}
         </div>
       </details>
     """
