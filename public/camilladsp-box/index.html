@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RASPIAUDIO CamillaDSP Box</title>
+  <meta name="description" content="Flashable Raspberry Pi 5 DSP image for RASPIAUDIO 8xOUT and 8xIN+8xOUT: USB audio, CamillaDSP, 8 analog outputs, active crossover and optical TOSLINK.">
+  <style>
+    :root {
+      --ink: #132027;
+      --muted: #52636d;
+      --line: #d8e1e5;
+      --bg: #f6f8f9;
+      --white: #ffffff;
+      --teal: #008b9a;
+      --teal-dark: #0c5360;
+      --green: #1f7a4d;
+      --amber: #946300;
+      --red: #9a3328;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    header {
+      position: absolute;
+      inset: 0 0 auto;
+      z-index: 2;
+      padding: 22px clamp(18px, 4vw, 56px);
+      color: white;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      max-width: 1160px;
+      margin: 0 auto;
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .nav-links a {
+      color: rgba(255, 255, 255, .9);
+      text-decoration: none;
+    }
+
+    .hero {
+      min-height: 92vh;
+      display: flex;
+      align-items: flex-end;
+      color: white;
+      background:
+        linear-gradient(90deg, rgba(9, 22, 30, .82) 0%, rgba(9, 22, 30, .58) 42%, rgba(9, 22, 30, .14) 100%),
+        url("assets/raspiaudio-8xout-pi5-usb-wiring.png") center / cover no-repeat;
+    }
+
+    .hero-inner {
+      width: 100%;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 130px clamp(18px, 4vw, 56px) 66px;
+    }
+
+    h1 {
+      max-width: 720px;
+      margin: 0;
+      font-size: clamp(42px, 7vw, 76px);
+      line-height: .95;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 660px;
+      margin: 22px 0 0;
+      font-size: clamp(18px, 2vw, 24px);
+      line-height: 1.35;
+      color: rgba(255, 255, 255, .9);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      border-radius: 6px;
+      padding: 11px 16px;
+      border: 1px solid var(--teal);
+      background: var(--teal);
+      color: white;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .button.secondary {
+      background: rgba(255, 255, 255, .1);
+      border-color: rgba(255, 255, 255, .58);
+      color: white;
+    }
+
+    main {
+      overflow: hidden;
+    }
+
+    section {
+      padding: 56px clamp(18px, 4vw, 56px);
+    }
+
+    .wrap {
+      max-width: 1160px;
+      margin: 0 auto;
+    }
+
+    .intro {
+      background: var(--white);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+      gap: 36px;
+      align-items: start;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    p {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .feature {
+      display: grid;
+      grid-template-columns: 32px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #e0f4f6;
+      color: var(--teal-dark);
+      font-weight: 900;
+    }
+
+    .media {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--white);
+    }
+
+    .media img,
+    .media video {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .media figcaption {
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .steps {
+      background: #ecf3f5;
+    }
+
+    .step-grid {
+      counter-reset: step;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 26px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .step {
+      counter-increment: step;
+      background: var(--white);
+      padding: 20px;
+      min-height: 145px;
+    }
+
+    .step::before {
+      content: counter(step);
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      margin-bottom: 16px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: white;
+      font-weight: 900;
+    }
+
+    .step strong {
+      display: block;
+      font-size: 17px;
+      margin-bottom: 8px;
+    }
+
+    .step span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.42;
+    }
+
+    .modes {
+      background: var(--white);
+    }
+
+    .mode-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .mode {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: #fbfcfc;
+    }
+
+    .mode.recommended {
+      border-color: var(--teal);
+      background: #eaf7f8;
+    }
+
+    .mode p {
+      margin: 0;
+    }
+
+    .troubleshooting {
+      background: #132027;
+      color: white;
+    }
+
+    .troubleshooting p {
+      color: #ccd7dc;
+    }
+
+    .trouble-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .trouble {
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 8px;
+      padding: 18px;
+      background: rgba(255, 255, 255, .06);
+    }
+
+    .trouble strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .trouble span {
+      color: #ccd7dc;
+      line-height: 1.45;
+    }
+
+    .final {
+      background: var(--white);
+      border-top: 1px solid var(--line);
+    }
+
+    footer {
+      padding: 26px clamp(18px, 4vw, 56px);
+      color: var(--muted);
+      background: #edf2f4;
+      border-top: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      color: var(--ink);
+      background: #e9eef1;
+      padding: 2px 5px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .troubleshooting code {
+      color: white;
+      background: rgba(255, 255, 255, .12);
+    }
+
+    @media (max-width: 880px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        min-height: 86vh;
+        background-position: 61% center;
+      }
+
+      .split,
+      .step-grid,
+      .mode-list,
+      .trouble-list {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: clamp(38px, 12vw, 56px);
+      }
+
+      section {
+        padding-block: 42px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="nav" aria-label="Main navigation">
+      <div class="brand">RASPIAUDIO</div>
+      <div class="nav-links">
+        <a href="#flash">Flash image</a>
+        <a href="#modes">Modes</a>
+        <a href="#help">Help</a>
+        <a href="https://github.com/RASPIAUDIO/CamillaDSP">Technical docs</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-inner">
+        <h1>RASPIAUDIO CamillaDSP Box</h1>
+        <p>Flash a Raspberry Pi 5 image, open <strong>raspiaudio.local</strong>, then choose USB 7.1 to 8 analog outputs.</p>
+        <div class="hero-actions">
+          <a class="button" href="downloads/raspiaudio-dspbox-pi5-2026.06.29.img.xz">Download image</a>
+          <a class="button secondary" href="#flash">Watch flash video</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="intro">
+      <div class="wrap split">
+        <div>
+          <h2>Open miniDSP-style audio box for Raspberry Pi 5.</h2>
+          <p>
+            Use a computer as the USB audio source, run CamillaDSP on the Raspberry Pi,
+            and send the processed audio to RASPIAUDIO 8xOUT or 8xIN+8xOUT analog outputs.
+          </p>
+          <div class="feature-list">
+            <div class="feature">
+              <div class="dot">1</div>
+              <div><h3>USB audio from the computer</h3><p>Windows, macOS or Linux sees one 7.1 / 8-channel / 48 kHz USB sound card.</p></div>
+            </div>
+            <div class="feature">
+              <div class="dot">2</div>
+              <div><h3>CamillaDSP inside the Pi</h3><p>Use passthrough first, then switch to crossover, PEQ, gain, delay or FIR presets.</p></div>
+            </div>
+            <div class="feature">
+              <div class="dot">3</div>
+              <div><h3>8 analog outputs plus optional optical</h3><p>Drive amplifiers from the 8 outputs, or use GPIO12 TOSLINK stereo mode.</p></div>
+            </div>
+          </div>
+        </div>
+        <figure class="media">
+          <img src="assets/camilladsp-usb-7-1-meters.png" alt="RASPIAUDIO dashboard and CamillaDSP meters showing USB input and 8 output channels">
+          <figcaption>Default test mode: USB 7.1 input mapped to 8 analog outputs.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="flash" class="steps">
+      <div class="wrap">
+        <h2>Setup in 8 steps.</h2>
+        <p>No SSH, terminal, YAML, or Linux audio setup is needed for the beginner path.</p>
+        <div class="step-grid">
+          <div class="step"><strong>Download image</strong><span>Get the latest RASPIAUDIO CamillaDSP Box <code>.img.xz</code>.</span></div>
+          <div class="step"><strong>Flash microSD</strong><span>Use Raspberry Pi Imager and choose <code>Use custom</code>.</span></div>
+          <div class="step"><strong>Mount hardware</strong><span>Use Raspberry Pi 5 with RASPIAUDIO 8xOUT or 8xIN+8xOUT.</span></div>
+          <div class="step"><strong>Connect USB</strong><span>Use the USB-C splitter: data to the computer, power to the PSU.</span></div>
+          <div class="step"><strong>Boot</strong><span>Wait about one minute on first boot.</span></div>
+          <div class="step"><strong>Open dashboard</strong><span>Go to <code>http://raspiaudio.local</code>.</span></div>
+          <div class="step"><strong>Choose mode</strong><span>Select <code>PC USB 7.1 to 8 analog outputs</code>.</span></div>
+          <div class="step"><strong>Test outputs</strong><span>Click OUT1 to OUT8 before raising amplifier volume.</span></div>
+        </div>
+        <figure class="media" style="margin-top: 28px">
+          <video controls preload="metadata" src="assets/raspberry-pi-imager-custom-image-windows.mp4"></video>
+          <figcaption>Windows example: flashing the custom image with Raspberry Pi Imager.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="modes" class="modes">
+      <div class="wrap">
+        <h2>Choose one mode, then test audio.</h2>
+        <p>The first screen shows only the recommended path. Advanced modes stay collapsed until needed.</p>
+        <div class="mode-list">
+          <div class="mode recommended">
+            <h3>PC USB 7.1 to 8 analog outputs</h3>
+            <p>Recommended first test. One USB 8-channel stream goes to OUT1 through OUT8.</p>
+          </div>
+          <div class="mode">
+            <h3>Optical TOSLINK stereo</h3>
+            <p>USB front L/R goes to the Pi 5 GPIO12 optical S/PDIF output.</p>
+          </div>
+          <div class="mode">
+            <h3>Active crossover</h3>
+            <p>Stereo input becomes a 3-way plus sub preset with safe gain, PEQ and delay placeholders.</p>
+          </div>
+          <div class="mode">
+            <h3>Analog input test</h3>
+            <p>Available on 8xIN+8xOUT boards for local ADC monitor and capture checks.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="help" class="troubleshooting">
+      <div class="wrap split">
+        <div>
+          <h2>Visual troubleshooting.</h2>
+          <p>The dashboard checks hardware, USB audio, CamillaDSP, analog outputs and TOSLINK. If something is wrong, use the plain-language action shown on screen.</p>
+          <div class="trouble-list">
+            <div class="trouble"><strong><code>raspiaudio.local</code> does not open</strong><span>Use the Raspberry Pi IP address from your router.</span></div>
+            <div class="trouble"><strong>USB sound card not visible</strong><span>Replug the data side of the splitter, then press Restart USB.</span></div>
+            <div class="trouble"><strong>No sound</strong><span>Press Fix audio, then use Test OUT1 to OUT8 at low amplifier volume.</span></div>
+            <div class="trouble"><strong>Need support</strong><span>Click Download diagnostics zip and send the file with your message.</span></div>
+          </div>
+        </div>
+        <figure class="media">
+          <img src="assets/pi5-spdif-minimal-led-toslink.png" alt="Minimal Raspberry Pi 5 optical S/PDIF output using GPIO12 and a LED">
+          <figcaption>Optional optical mode: GPIO12 can drive a TOSLINK optical output through the RASPISPDIF driver.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap split">
+        <div>
+          <h2>Technical documentation stays on GitHub.</h2>
+          <p>
+            The public image is for normal users. The GitHub repository keeps the
+            advanced details: CamillaDSP YAML, USB gadget setup, TOSLINK driver,
+            active crossover presets, release validation and image builder files.
+          </p>
+          <div class="hero-actions">
+            <a class="button" href="https://github.com/RASPIAUDIO/CamillaDSP">Open GitHub technical docs</a>
+            <a class="button secondary" style="color: var(--teal); border-color: var(--teal); background: transparent" href="releases.json">Release channel JSON</a>
+          </div>
+        </div>
+        <figure class="media">
+          <img src="assets/raspiaudio-8xout-pi5-usb-wiring.png" alt="Raspberry Pi 5 with RASPIAUDIO 8xOUT, USB data cable, power cable, and 8 analog outputs">
+          <figcaption>Raspberry Pi 5, RASPIAUDIO 8xOUT, USB data cable, separate USB power and 8 analog outputs.</figcaption>
+        </figure>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">RASPIAUDIO CamillaDSP Box for Raspberry Pi 5. V1 image target: 48 kHz USB audio.</div>
+  </footer>
+</body>
+</html>

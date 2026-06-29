@@ -133,6 +133,12 @@ install_appliance_files() {
   install -m 0755 "$SCRIPT_DIR/bin/raspiaudio-validate-release" /usr/local/sbin/raspiaudio-validate-release
   install -m 0755 "$SCRIPT_DIR/bin/raspiaudio-dev-update" /usr/local/sbin/raspiaudio-dev-update
   install -m 0755 "$SCRIPT_DIR/web/raspiaudio_web.py" /opt/raspiaudio-web/raspiaudio_web.py
+  if [ -f "$SCRIPT_DIR/CHANGELOG.md" ]; then
+    install -m 0644 "$SCRIPT_DIR/CHANGELOG.md" /etc/raspiaudio/changelog.md
+  fi
+  if [ -f "$SCRIPT_DIR/update-channel.example.json" ]; then
+    install -m 0644 "$SCRIPT_DIR/update-channel.example.json" /etc/raspiaudio/update-channel.example.json
+  fi
   install_version_file
 
   cat >/etc/raspiaudio/box.conf <<EOF

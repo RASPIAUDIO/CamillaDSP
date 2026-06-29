@@ -67,6 +67,12 @@ install_fast() {
   install -m 0755 appliance/bin/raspiaudio-dev-update /usr/local/sbin/raspiaudio-dev-update
   install -m 0755 appliance/web/raspiaudio_web.py /opt/raspiaudio-web/raspiaudio_web.py
   install -m 0644 appliance/VERSION /etc/raspiaudio/version
+  if [ -f appliance/CHANGELOG.md ]; then
+    install -m 0644 appliance/CHANGELOG.md /etc/raspiaudio/changelog.md
+  fi
+  if [ -f appliance/update-channel.example.json ]; then
+    install -m 0644 appliance/update-channel.example.json /etc/raspiaudio/update-channel.example.json
+  fi
 
   install -d -o raspiaudio -g audio -m 0775 /etc/camilladsp /etc/camilladsp/coeffs
   install -m 0644 -o raspiaudio -g audio configs/*.yml /etc/camilladsp/

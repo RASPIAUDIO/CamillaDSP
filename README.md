@@ -5,7 +5,10 @@ active speakers, DSP crossovers, EQ, gain, delay, and phase/time alignment.
 
 ## Quick Start
 
-The recommended beginner path is the flashable RASPIAUDIO appliance image:
+The recommended beginner path is the flashable RASPIAUDIO appliance image.
+Normal users should start from the public product page:
+
+[https://raspiaudio.com/camilladsp-box](https://raspiaudio.com/camilladsp-box)
 
 ```text
 Flash image -> boot -> open http://raspiaudio.local -> choose mode -> test audio
@@ -24,6 +27,9 @@ and the simple dashboard.
 
 Beginner flashing guide:
 [docs/flash_appliance_image.md](docs/flash_appliance_image.md)
+
+Public page source:
+[public/camilladsp-box](public/camilladsp-box)
 
 Detailed appliance/release notes:
 [docs/appliance_image.md](docs/appliance_image.md)

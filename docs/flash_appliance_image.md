@@ -2,6 +2,12 @@
 
 This is the simplest setup path for non-Linux users.
 
+Public download page:
+
+```text
+https://raspiaudio.com/camilladsp-box
+```
+
 You flash one ready-made image, boot the Raspberry Pi, then use the web page:
 
 ```text
@@ -78,3 +84,14 @@ After the first test works, the dashboard can also enable:
 
 Use the `Advanced CamillaDSP editor` button only when you want to edit filters,
 mixers, gains, delays, PEQ, FIR, or crossover settings.
+
+## If You Need Support
+
+Open the dashboard and click:
+
+```text
+Download diagnostics zip
+```
+
+Send that zip with your support message. It contains the audio device list,
+dashboard health checks, CamillaDSP logs, and the selected mode.

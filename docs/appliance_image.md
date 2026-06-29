@@ -34,10 +34,15 @@ sudo touch /etc/raspiaudio/lab-mode
 sudo systemctl restart raspiaudio-web.service
 ```
 
-Then the dashboard shows `Lab update from GitHub`. It pulls the latest
-`main` branch into `/opt/raspiaudio-camilladsp`, copies the dashboard/scripts,
-profiles and systemd units, then restarts the audio services. This is much
-faster than reflashing the SD card after every small change.
+The public dashboard must not show GitHub/lab update controls. The lab image
+still accepts the hidden `/api/lab-update` endpoint when
+`/etc/raspiaudio/lab-mode` exists, but normal users should only see
+`Update system`.
+
+The lab updater pulls the latest `main` branch into
+`/opt/raspiaudio-camilladsp`, copies the dashboard/scripts, profiles and
+systemd units, then restarts the audio services. This is much faster than
+reflashing the SD card after every small change.
 
 Equivalent shell command:
 
@@ -59,7 +64,7 @@ it is heavier than necessary for ordinary CamillaDSP/dashboard iteration. For
 our lab tests, prefer this workflow:
 
 ```text
-flash once -> enable lab mode -> click Lab update from GitHub -> retest
+flash once -> enable lab mode -> call /api/lab-update or run raspiaudio-dev-update -> retest
 ```
 
 ## What Gets Installed
@@ -90,6 +95,7 @@ The appliance installer adds:
 - Mode switcher through `/etc/camilladsp/current.yml`.
 - Diagnostics zip generator.
 - Release-candidate validator.
+- Public update-channel reader and bundled changelog.
 - Hidden lab updater for development images.
 - Beginner health checks for USB gadget, analog output card, TOSLINK, services
   and `raspiaudio.local`.
@@ -145,6 +151,22 @@ modes. It does not yet expose the 8 analog inputs to the host computer as a USB
 recording device.
 
 ## Image Release
+
+The public release channel is intentionally image-based. `Update system` reads:
+
+```text
+https://raspiaudio.com/camilladsp-box/releases.json
+```
+
+or `/etc/raspiaudio/update-channel-url` if a test image overrides it. The
+button reports the latest image, SHA256, Raspberry Pi Imager repository URL,
+and changelog. It does not rewrite the live SD card in place.
+
+The channel format is documented in:
+
+```text
+appliance/update-channel.example.json
+```
 
 Before publishing, clean the development image:
 

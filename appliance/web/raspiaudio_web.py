@@ -100,7 +100,7 @@ def start_lab_update():
             "ok": True,
             "returncode": 0,
             "output": (
-                "Lab update started from GitHub. "
+                "Lab update started. "
                 "Refresh this page after 30 seconds. "
                 f"Log: {log_path}"
             ),
@@ -306,10 +306,6 @@ def render_page():
         </article>
         """
     )
-
-    lab_button = ""
-    if LAB_MODE_FILE.exists():
-        lab_button = '<button data-action="lab-update" class="secondary">Lab update from GitHub</button>'
 
     checks = health.get("checks", [])
     if checks:
@@ -630,7 +626,7 @@ def render_page():
         <h1>RASPIAUDIO CamillaDSP Box</h1>
         <p>Flash image, boot, choose mode, test audio.</p>
       </div>
-      <div class="version">Version {html.escape(version)}</div>
+      <div class="version">RASPIAUDIO CamillaDSP Box {html.escape(version)}</div>
     </div>
   </header>
   <main>
@@ -668,7 +664,6 @@ def render_page():
         <button data-action="update-system" class="secondary">Update system</button>
         <button data-action="factory-reset" class="secondary">Factory reset audio</button>
         <button data-action="validate-release" class="secondary">Run release checks</button>
-        {lab_button}
         <a class="button secondary" href="/api/diagnostics">Download diagnostics zip</a>
       </div>
       <pre id="log">Ready.</pre>
@@ -717,10 +712,6 @@ def render_page():
     bind('[data-action="update-system"]', () => post('/api/update-system', {{}}));
     bind('[data-action="factory-reset"]', () => post('/api/factory-reset', {{}}));
     bind('[data-action="validate-release"]', () => post('/api/validate-release', {{}}));
-    const labUpdate = document.querySelector('[data-action="lab-update"]');
-    if (labUpdate) {{
-      labUpdate.addEventListener('click', () => post('/api/lab-update', {{}}));
-    }}
   </script>
 </body>
 </html>

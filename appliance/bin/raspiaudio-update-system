@@ -2,7 +2,9 @@
 set -euo pipefail
 
 VERSION_FILE="/etc/raspiaudio/version"
-UPDATE_URL_FILE="/etc/raspiaudio/update-url"
+CHANNEL_FILE="/etc/raspiaudio/update-channel-url"
+FALLBACK_CHANGELOG="/etc/raspiaudio/changelog.md"
+DEFAULT_CHANNEL_URL="https://raspiaudio.com/camilladsp-box/releases.json"
 
 current_version() {
   if [ -f "$VERSION_FILE" ]; then
@@ -12,19 +14,105 @@ current_version() {
   fi
 }
 
-cat <<EOF
+channel_url() {
+  if [ -n "${RASPIAUDIO_UPDATE_CHANNEL_URL:-}" ]; then
+    printf '%s\n' "$RASPIAUDIO_UPDATE_CHANNEL_URL"
+    return
+  fi
+  if [ -f "$CHANNEL_FILE" ]; then
+    tr -d '\r\n' <"$CHANNEL_FILE"
+    return
+  fi
+  printf '%s\n' "$DEFAULT_CHANNEL_URL"
+}
+
+fetch_and_print_channel() {
+  local url="$1"
+  python3 - "$url" "$(current_version)" <<'PY'
+import json
+import sys
+import urllib.request
+
+url = sys.argv[1]
+current = sys.argv[2]
+
+try:
+    with urllib.request.urlopen(url, timeout=10) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+except Exception as exc:
+    sys.exit(1)
+
+product = payload.get("product", "RASPIAUDIO CamillaDSP Box")
+latest = payload.get("latest_version", "unknown")
+date = payload.get("release_date", "unknown")
+page = payload.get("download_page", "")
+image = payload.get("image_url", "")
+sha = payload.get("sha256_url", "")
+imager = payload.get("imager_repository_url", "")
+notes = payload.get("changelog", [])
+
+print(product)
+print(f"Current version: {current}")
+print(f"Latest version:  {latest}")
+print(f"Release date:    {date}")
+print()
+
+if current == latest:
+    print("Status: this image is up to date.")
+else:
+    print("Status: a newer image may be available.")
+
+print()
+print("Install update:")
+print("  1. Download the new .img.xz image.")
+print("  2. Flash it with Raspberry Pi Imager.")
+print("  3. Boot and open http://raspiaudio.local.")
+print()
+
+if page:
+    print(f"Download page: {page}")
+if image:
+    print(f"Image:         {image}")
+if sha:
+    print(f"SHA256:        {sha}")
+if imager:
+    print(f"Imager repo:   {imager}")
+
+if notes:
+    print()
+    print("Changelog:")
+    for item in notes:
+        print(f"- {item}")
+PY
+}
+
+print_fallback() {
+  local url="$1"
+  cat <<EOF
 RASPIAUDIO CamillaDSP Box
 Current version: $(current_version)
 
-No public update channel is configured on this image yet.
+Update channel:
+  $url
 
-For beta images, download the latest .img.xz release and flash it again with
-Raspberry Pi Imager. Development images may expose the separate Lab update
-button when /etc/raspiaudio/lab-mode is intentionally enabled.
+Could not read the online release channel from this Pi.
+
+For public images, update by flashing the latest .img.xz image with
+Raspberry Pi Imager, then boot and open:
+  http://raspiaudio.local
+
+Download page:
+  https://raspiaudio.com/camilladsp-box
 EOF
 
-if [ -f "$UPDATE_URL_FILE" ]; then
-  echo
-  echo "Configured update URL:"
-  cat "$UPDATE_URL_FILE"
+  if [ -f "$FALLBACK_CHANGELOG" ]; then
+    echo
+    echo "Bundled changelog:"
+    sed -n '1,120p' "$FALLBACK_CHANGELOG"
+  fi
+}
+
+URL="$(channel_url)"
+if ! fetch_and_print_channel "$URL"; then
+  print_fallback "$URL"
 fi
