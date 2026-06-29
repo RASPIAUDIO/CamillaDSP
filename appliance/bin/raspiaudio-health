@@ -108,6 +108,8 @@ def detect_cards(text, pattern):
 def build_health():
     mode = load_mode_status()
     hardware = str(mode.get("hardware", "unknown"))
+    hardware_config = str(mode.get("hardware_config", hardware))
+    detected_hardware = str(mode.get("detected_hardware", "unknown"))
     checks = []
 
     hostname = command_output("hostname").strip()
@@ -175,6 +177,36 @@ def build_health():
         f"raspiaudio-web.service is {web}.",
         "If this page is visible, the web backend may be running manually or through nginx.",
     )
+
+    if hardware_config == "auto":
+        auto_ok = hardware in ("8xout", "8xin8xout")
+        add_check(
+            checks,
+            "hardware_autodetect",
+            "RASPIAUDIO hardware auto-detect",
+            auto_ok,
+            "warning",
+            (
+                f"Auto-detected {hardware} from ALSA. "
+                "The hifiberry-dac8x overlay uses GPIO5 active-low as hasadc-gpio."
+            )
+            if auto_ok
+            else (
+                "Auto-detect could not find the RASPIAUDIO ALSA card yet. "
+                "The hifiberry-dac8x overlay uses GPIO5 active-low as hasadc-gpio."
+            ),
+            "Check HAT seating, dtoverlay=hifiberry-dac8x and reboot.",
+        )
+    elif detected_hardware in ("8xout", "8xin8xout") and detected_hardware != hardware:
+        add_check(
+            checks,
+            "hardware_manual_override",
+            "RASPIAUDIO hardware manual override",
+            False,
+            "warning",
+            f"Hardware is forced to {hardware}, but ALSA detection sees {detected_hardware}.",
+            "Use Auto detect unless you are doing a lab override.",
+        )
 
     usb_config = read_text(USB_G_AUDIO_CONFIG)
     usb_profile_ok = (
@@ -253,7 +285,7 @@ def build_health():
             analog_in,
             "error",
             "RASPIAUDIO analog input card is present." if analog_in else "8xIN ADC capture is not visible.",
-            "Check the 8xIN+8xOUT hardware mode and ADC driver option.",
+            "Check the 8xIN+8xOUT board, GPIO5 hasadc detection and dtoverlay=hifiberry-dac8x.",
         )
 
     spdif = detect_cards(aplay, r"RASPISPDIF")

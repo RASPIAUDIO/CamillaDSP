@@ -8,7 +8,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-HARDWARE="${RASPIAUDIO_HARDWARE:-8xout}"
+HARDWARE="${RASPIAUDIO_HARDWARE:-auto}"
 ACTIVE_MODE="${RASPIAUDIO_ACTIVE_MODE:-usb_7_1_to_8out}"
 SAMPLE_RATE="${RASPIAUDIO_SAMPLE_RATE:-48000}"
 ADC_DRIVER_OPTION="${RASPIAUDIO_ADC_DRIVER_OPTION:-}"
@@ -127,8 +127,13 @@ install_appliance_files() {
 hardware=${HARDWARE}
 active_mode=${ACTIVE_MODE}
 sample_rate=${SAMPLE_RATE}
-# For 8xIN+8xOUT images, set this to the exact driver option that enables ADC
-# input loading in the hifiberry-dac8x based RASPIAUDIO overlay.
+# Hardware can be auto, 8xout or 8xin8xout.
+# Auto mode relies on the hifiberry-dac8x overlay/driver:
+# the official overlay exposes hasadc-gpio on GPIO5 active-low, and
+# the resulting ALSA capture card tells us whether ADC is present.
+#
+# Legacy optional driver option. Leave empty unless a lab driver explicitly
+# requires a module option to expose the ADC path.
 adc_driver_option=${ADC_DRIVER_OPTION}
 EOF
 }
@@ -186,8 +191,8 @@ EOF
 
 main() {
   case "$HARDWARE" in
-    8xout|8xin8xout) ;;
-    *) echo "RASPIAUDIO_HARDWARE must be 8xout or 8xin8xout." >&2; exit 1 ;;
+    auto|8xout|8xin8xout) ;;
+    *) echo "RASPIAUDIO_HARDWARE must be auto, 8xout or 8xin8xout." >&2; exit 1 ;;
   esac
 
   install_packages

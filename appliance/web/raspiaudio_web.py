@@ -36,6 +36,7 @@ MODES = [
 ]
 
 HARDWARE = [
+    ("auto", "Auto detect"),
     ("8xout", "RASPIAUDIO 8xOUT"),
     ("8xin8xout", "RASPIAUDIO 8xIN+8xOUT"),
 ]
@@ -147,13 +148,20 @@ def render_page():
     status = health.get("mode") if isinstance(health.get("mode"), dict) else load_status()
     active = status.get("active_mode", "")
     hardware = status.get("hardware", "")
+    hardware_config = status.get("hardware_config", hardware)
+    detected_hardware = status.get("detected_hardware", "unknown")
     camilla = status.get("camilladsp", "unknown")
     spdif = "present" if status.get("spdif_present") else "not detected"
     health_status = health.get("status", "unknown")
+    hardware_display = str(hardware)
+    if hardware_config == "auto":
+        hardware_display = f"auto -> {hardware}"
+        if detected_hardware == "unknown":
+            hardware_display = "auto -> unknown"
 
     hardware_buttons = []
     for value, label in HARDWARE:
-        selected = " selected" if value == hardware else ""
+        selected = " selected" if value == hardware_config else ""
         hardware_buttons.append(
             f"""
             <button class="pill{selected}" data-hardware="{html.escape(value)}">{html.escape(label)}</button>
@@ -375,7 +383,7 @@ def render_page():
   </header>
   <main>
     <section class="status">
-      <div class="metric"><span>Hardware</span><strong>{html.escape(str(hardware))}</strong></div>
+      <div class="metric"><span>Hardware</span><strong>{html.escape(hardware_display)}</strong></div>
       <div class="metric"><span>Mode</span><strong>{html.escape(str(status.get("active_mode_label", active)))}</strong></div>
       <div class="metric"><span>CamillaDSP</span><strong>{html.escape(str(camilla))}</strong></div>
       <div class="metric"><span>TOSLINK card</span><strong>{html.escape(spdif)}</strong></div>

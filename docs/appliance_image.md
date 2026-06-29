@@ -93,7 +93,7 @@ The appliance installer adds:
 
 ## Hardware Modes
 
-The image supports both:
+The image supports both boards with one public image:
 
 - `8xout`
 - `8xin8xout`
@@ -104,8 +104,19 @@ Both use:
 dtoverlay=hifiberry-dac8x
 ```
 
-The 8xIN+8xOUT mode uses the same driver/overlay, plus the board-specific driver
-option that enables the ADC path. Keep this option empty for 8xOUT images.
+The default is `hardware=auto`. The official `hifiberry-dac8x` overlay exposes
+`hasadc-gpio` on GPIO5 active-low. The kernel driver reads that GPIO at boot and
+creates the ADC capture device only when the board has the input section. The
+appliance therefore detects the board from ALSA:
+
+- playback card only: `8xout`
+- playback card + ADC capture card: `8xin8xout`
+
+The dashboard still has manual `8xout` and `8xin8xout` overrides for lab tests,
+but the beginner image should ship in `Auto detect`.
+
+The old board-specific ADC module option is legacy/lab-only. Keep it empty
+unless a development driver explicitly requires it.
 
 Example when the final driver option is known:
 
@@ -116,7 +127,7 @@ sudo RASPIAUDIO_HARDWARE=8xin8xout \
 ```
 
 Replace the example option with the real RASPIAUDIO driver option before
-publishing an 8xIN+8xOUT image.
+publishing a special lab image.
 
 On 8xIN+8xOUT, the local ALSA layout is:
 
@@ -183,7 +194,8 @@ Linux details belong in the advanced documentation, not in the first tutorial.
 Fresh-flash validation on 2026-06-29 proved:
 
 - `http://raspiaudio.local/` comes online.
-- The image detects `8xin8xout` hardware.
+- The image can detect RASPIAUDIO hardware from the ALSA cards exposed by
+  `dtoverlay=hifiberry-dac8x`.
 - CamillaDSP, CamillaGUI, nginx, Avahi, and the dashboard start.
 - The analog 8-output ALSA card and analog 8-input ALSA card are visible.
 

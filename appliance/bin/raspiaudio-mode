@@ -7,7 +7,7 @@ CURRENT_CONFIG="${CURRENT_CONFIG:-$CAMILLA_CONFIG_DIR/current.yml}"
 BOOT_CONFIG="${BOOT_CONFIG:-/boot/firmware/config.txt}"
 IMAGE_BUILD="${RASPIAUDIO_IMAGE_BUILD:-0}"
 
-DEFAULT_HARDWARE="8xout"
+DEFAULT_HARDWARE="auto"
 DEFAULT_MODE="usb_7_1_to_8out"
 DEFAULT_SAMPLE_RATE="48000"
 
@@ -33,8 +33,13 @@ write_config() {
 hardware=${hardware}
 active_mode=${active_mode}
 sample_rate=${sample_rate}
-# Optional driver option used by the RASPIAUDIO 8xIN+8xOUT kernel overlay
-# to enable the ADC path. Leave empty for 8xOUT-only images.
+# Hardware can be auto, 8xout or 8xin8xout.
+# Auto mode relies on the hifiberry-dac8x overlay/driver:
+# the official overlay exposes hasadc-gpio on GPIO5 active-low, and
+# the resulting ALSA capture card tells us whether ADC is present.
+#
+# Legacy optional driver option. Leave empty unless a lab driver explicitly
+# requires a module option to expose the ADC path.
 adc_driver_option=${adc_driver_option}
 EOF
 }
@@ -119,16 +124,68 @@ PY
 }
 
 apply_hardware() {
+  local effective
+  effective="$(effective_hardware)"
   ensure_boot_overlay
   install -d -m 0755 /etc/modprobe.d
   cat >/etc/modprobe.d/raspiaudio-card.conf <<EOF
 # RASPIAUDIO appliance hardware mode.
 # Both 8xOUT and 8xIN+8xOUT use dtoverlay=hifiberry-dac8x.
-# 8xIN+8xOUT enables the ADC path through the board-specific driver option below.
+# Default hardware=auto uses the driver decision from hasadc-gpio GPIO5.
+# The legacy ADC option below is only written when explicitly configured.
 EOF
-  if [ "$hardware" = "8xin8xout" ] && [ -n "$adc_driver_option" ]; then
+  if [ "$effective" = "8xin8xout" ] && [ -n "$adc_driver_option" ]; then
     printf '%s\n' "$adc_driver_option" >>/etc/modprobe.d/raspiaudio-card.conf
   fi
+}
+
+detect_hardware() {
+  local arecord_cards=""
+  local aplay_cards=""
+
+  if command -v arecord >/dev/null 2>&1; then
+    arecord_cards="$(arecord -l 2>/dev/null || true)"
+    if printf '%s\n' "$arecord_cards" | grep -Eiq 'snd_rpi_hifiberry_dac8x|sndrpihifiberry|hifiberry|dac8'; then
+      echo "8xin8xout"
+      return 0
+    fi
+  fi
+
+  if command -v aplay >/dev/null 2>&1; then
+    aplay_cards="$(aplay -l 2>/dev/null || true)"
+    if printf '%s\n' "$aplay_cards" | grep -Eiq 'snd_rpi_hifiberry_dac8x|sndrpihifiberry|hifiberry|dac8'; then
+      echo "8xout"
+      return 0
+    fi
+  fi
+
+  echo "unknown"
+}
+
+gpio5_state() {
+  if command -v pinctrl >/dev/null 2>&1; then
+    pinctrl get 5 2>/dev/null | head -n 1 || true
+    return 0
+  fi
+  if command -v raspi-gpio >/dev/null 2>&1; then
+    raspi-gpio get 5 2>/dev/null | head -n 1 || true
+    return 0
+  fi
+  echo ""
+}
+
+effective_hardware() {
+  local detected
+  if [ "$hardware" = "auto" ]; then
+    detected="$(detect_hardware)"
+    if [ "$detected" != "unknown" ]; then
+      echo "$detected"
+      return 0
+    fi
+    echo "unknown"
+    return 0
+  fi
+  echo "$hardware"
 }
 
 set_mode() {
@@ -154,12 +211,12 @@ set_mode() {
 
 set_hardware() {
   case "$1" in
-    8xout|8xin8xout)
+    auto|8xout|8xin8xout)
       hardware="$1"
       ;;
     *)
       echo "Unknown hardware: $1" >&2
-      echo "Use 8xout or 8xin8xout." >&2
+      echo "Use auto, 8xout or 8xin8xout." >&2
       exit 1
       ;;
   esac
@@ -170,6 +227,7 @@ set_hardware() {
 }
 
 reset_audio() {
+  hardware="$DEFAULT_HARDWARE"
   active_mode="$DEFAULT_MODE"
   sample_rate="$DEFAULT_SAMPLE_RATE"
   write_config
@@ -186,6 +244,12 @@ status_json() {
   local camilla_state="unknown"
   local gui_state="unknown"
   local spdif_present="false"
+  local detected=""
+  local effective=""
+  local gpio5=""
+  detected="$(detect_hardware)"
+  effective="$(effective_hardware)"
+  gpio5="$(gpio5_state)"
   if [ -L "$CURRENT_CONFIG" ] || [ -f "$CURRENT_CONFIG" ]; then
     current_target="$(readlink -f "$CURRENT_CONFIG" 2>/dev/null || echo "$CURRENT_CONFIG")"
   fi
@@ -198,7 +262,12 @@ status_json() {
   fi
   cat <<EOF
 {
-  "hardware": $(printf '%s' "$hardware" | json_escape),
+  "hardware": $(printf '%s' "$effective" | json_escape),
+  "hardware_config": $(printf '%s' "$hardware" | json_escape),
+  "detected_hardware": $(printf '%s' "$detected" | json_escape),
+  "hardware_detection": "auto uses ALSA capture/playback exposed by hifiberry-dac8x; that overlay declares hasadc-gpio on GPIO5 active-low",
+  "hasadc_gpio": "GPIO5 active-low in hifiberry-dac8x overlay",
+  "gpio5_state": $(printf '%s' "$gpio5" | json_escape),
   "active_mode": $(printf '%s' "$active_mode" | json_escape),
   "active_mode_label": $(mode_label "$active_mode" | json_escape),
   "sample_rate": $(printf '%s' "$sample_rate" | json_escape),
@@ -223,7 +292,7 @@ Usage:
   raspiaudio-mode status-json
   raspiaudio-mode list
   raspiaudio-mode set <mode>
-  raspiaudio-mode set-hardware <8xout|8xin8xout>
+  raspiaudio-mode set-hardware <auto|8xout|8xin8xout>
   raspiaudio-mode apply-hardware
   raspiaudio-mode reset
 
@@ -240,7 +309,12 @@ load_config
 
 case "${1:-}" in
   status)
-    echo "Hardware: $hardware"
+    echo "Hardware config: $hardware"
+    echo "Detected hardware: $(detect_hardware)"
+    echo "Effective hardware: $(effective_hardware)"
+    echo "ADC detect GPIO: GPIO5 active-low via hifiberry-dac8x hasadc-gpio"
+    gpio_state="$(gpio5_state)"
+    [ -n "$gpio_state" ] && echo "GPIO5 state: $gpio_state"
     echo "Active mode: $active_mode ($(mode_label "$active_mode"))"
     echo "Sample rate: $sample_rate"
     echo "Current config: $(readlink -f "$CURRENT_CONFIG" 2>/dev/null || echo "$CURRENT_CONFIG")"

@@ -20,8 +20,11 @@ The normal user should not need SSH, ALSA commands, YAML editing, `dtoverlay`,
 - `dtoverlay=hifiberry-dac8x` for both boards.
 - Optional optical TOSLINK stereo output on GPIO12 through `RASPISPDIF`.
 
-8xOUT and 8xIN+8xOUT use the same Linux audio overlay. The hardware selector in
-the appliance only changes the board mode and the optional ADC driver option.
+8xOUT and 8xIN+8xOUT use the same Linux audio overlay. The appliance defaults
+to `hardware=auto`: the official `hifiberry-dac8x` overlay declares
+`hasadc-gpio` on GPIO5 active-low, the kernel driver uses that pin at boot, and
+the appliance then checks ALSA to see whether the ADC capture device exists.
+Manual `8xout` and `8xin8xout` overrides remain available for lab work.
 
 For the 8xIN+8xOUT board, the appliance includes local 8-channel ADC capture and
 8-channel analog playback support:
@@ -57,7 +60,14 @@ sudo ./appliance/install_appliance.sh
 sudo reboot
 ```
 
-For 8xIN+8xOUT development, pass the hardware mode:
+The default installer mode is automatic hardware detection:
+
+```bash
+sudo ./appliance/install_appliance.sh
+```
+
+For 8xIN+8xOUT development, you normally do not need a manual mode. If you want
+to force it for a lab test:
 
 ```bash
 sudo RASPIAUDIO_HARDWARE=8xin8xout ./appliance/install_appliance.sh
@@ -71,8 +81,9 @@ sudo RASPIAUDIO_HARDWARE=8xin8xout \
   ./appliance/install_appliance.sh
 ```
 
-Replace the driver option with the exact option used by the final RASPIAUDIO
-overlay. Leave it empty for 8xOUT.
+This driver option is legacy/lab-only. With the upstream-style
+`hifiberry-dac8x` overlay, GPIO5 `hasadc-gpio` should be enough and the option
+should stay empty.
 
 ## Use
 
@@ -138,7 +149,8 @@ This is the beginner support surface. It reports the common first-run failures:
 - USB gadget profile missing
 - `UAC2Gadget` not visible
 - analog output card not visible
-- 8xIN ADC not visible when hardware mode is `8xin8xout`
+- hardware auto-detection result from ALSA / GPIO5 `hasadc-gpio`
+- 8xIN ADC not visible when effective hardware is `8xin8xout`
 - TOSLINK `RASPISPDIF` card not visible
 - CamillaDSP or CamillaGUI service inactive
 

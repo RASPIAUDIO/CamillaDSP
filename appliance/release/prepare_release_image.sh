@@ -53,11 +53,16 @@ rm -rf /var/lib/NetworkManager/* 2>/dev/null || true
 set_local_hostname_files raspiaudio
 
 cat >/etc/raspiaudio/box.conf <<'EOF'
-hardware=8xout
+hardware=auto
 active_mode=usb_7_1_to_8out
 sample_rate=48000
-# For 8xIN+8xOUT images, set this to the exact driver option that enables ADC
-# input loading in the hifiberry-dac8x based RASPIAUDIO overlay.
+# Hardware can be auto, 8xout or 8xin8xout.
+# Auto mode relies on the hifiberry-dac8x overlay/driver:
+# the official overlay exposes hasadc-gpio on GPIO5 active-low, and
+# the resulting ALSA capture card tells us whether ADC is present.
+#
+# Legacy optional driver option. Leave empty unless a lab driver explicitly
+# requires a module option to expose the ADC path.
 adc_driver_option=
 EOF
 

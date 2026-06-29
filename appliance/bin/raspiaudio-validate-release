@@ -181,6 +181,8 @@ def validate_release(args):
     mode_status, mode_error = load_mode_status()
     if mode_status:
         hardware = str(mode_status.get("hardware", "unknown"))
+        hardware_config = str(mode_status.get("hardware_config", hardware))
+        detected_hardware = str(mode_status.get("detected_hardware", "unknown"))
         active_mode = str(mode_status.get("active_mode", "unknown"))
         sample_rate = str(mode_status.get("sample_rate", "unknown"))
 
@@ -188,10 +190,16 @@ def validate_release(args):
             checks,
             "hardware_mode",
             "RASPIAUDIO hardware mode",
-            status_from_bool(hardware in ("8xout", "8xin8xout")),
-            f"Hardware mode is {hardware}.",
+            status_from_bool(
+                hardware in ("8xout", "8xin8xout")
+                and hardware_config in ("auto", "8xout", "8xin8xout")
+            ),
+            (
+                f"Hardware config is {hardware_config}; "
+                f"effective hardware is {hardware}; detected hardware is {detected_hardware}."
+            ),
             json.dumps(mode_status, sort_keys=True),
-            "Use the dashboard hardware selector or raspiaudio-mode set-hardware.",
+            "Use Auto detect, then check HAT seating, GPIO5 hasadc detection and dtoverlay=hifiberry-dac8x.",
         )
         add_check(
             checks,
@@ -409,7 +417,7 @@ def validate_release(args):
             status_from_bool(analog_in),
             "RASPIAUDIO analog input card is visible." if analog_in else "RASPIAUDIO analog input card is not visible.",
             alsa_evidence,
-            "Check the 8xIN+8xOUT hardware mode and ADC driver option.",
+            "Check the 8xIN+8xOUT board, GPIO5 hasadc detection and dtoverlay=hifiberry-dac8x.",
         )
 
     spdif_present = find_card(aplay, r"RASPISPDIF")
