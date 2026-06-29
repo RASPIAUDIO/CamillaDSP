@@ -41,6 +41,7 @@ MODES = [
 ]
 
 LAB_MODE_FILE = pathlib.Path("/etc/raspiaudio/lab-mode")
+VERSION_FILE = pathlib.Path("/etc/raspiaudio/version")
 
 REQUIREMENT_LABELS = {
     "analog_out": "8 analog outputs not detected",
@@ -155,6 +156,44 @@ def check_ok_map(health):
     return checks
 
 
+def check_by_key(health):
+    checks = {}
+    for check in health.get("checks", []):
+        key = str(check.get("key", ""))
+        if key:
+            checks[key] = check
+    return checks
+
+
+def load_version():
+    candidates = [
+        VERSION_FILE,
+        pathlib.Path(__file__).resolve().parent.parent / "VERSION",
+    ]
+    for path in candidates:
+        try:
+            if path.exists():
+                value = path.read_text(encoding="utf-8").strip()
+                if value:
+                    return value
+        except OSError:
+            pass
+    return "unknown"
+
+
+def hardware_label(status):
+    hardware = str(status.get("hardware", "unknown"))
+    if hardware == "8xin8xout":
+        return "8xIN+8xOUT detected"
+    if hardware == "8xout":
+        return "8xOUT detected"
+    return "Hardware not detected"
+
+
+def status_level(ok, fallback="warning"):
+    return "ok" if ok else fallback
+
+
 def mode_availability(mode, status, health):
     hardware = str(status.get("hardware", "unknown"))
     supported_hardware = mode.get("hardware")
@@ -179,20 +218,60 @@ def render_page():
     health = load_health()
     status = health.get("mode") if isinstance(health.get("mode"), dict) else load_status()
     active = status.get("active_mode", "")
-    hardware = status.get("hardware", "")
-    hardware_config = status.get("hardware_config", hardware)
-    detected_hardware = status.get("detected_hardware", "unknown")
     camilla = status.get("camilladsp", "unknown")
-    spdif = "present" if status.get("spdif_present") else "not detected"
     health_status = health.get("status", "unknown")
-    hardware_display = str(hardware)
-    if hardware_config == "auto":
-        hardware_display = f"auto -> {hardware}"
-        if detected_hardware == "unknown":
-            hardware_display = "auto -> unknown"
+    version = load_version()
+    checks_ok = check_ok_map(health)
+    checks_by_key = check_by_key(health)
 
-    mode_cards = []
-    for mode in MODES:
+    hardware_ok = checks_ok.get("hardware_autodetect", False)
+    analog_out_ok = checks_ok.get("analog_out", False)
+    usb_ok = (
+        checks_ok.get("g_audio", False)
+        and checks_ok.get("usb_link_state", False)
+        and checks_ok.get("uac2_capture", False)
+    )
+    audio_test_ok = analog_out_ok and camilla == "active"
+
+    usb_message = "Connected to computer" if usb_ok else "Plug the USB data cable"
+    hardware_message = hardware_label(status)
+    audio_message = "Ready to test OUT1 to OUT8" if audio_test_ok else "Audio test is not ready yet"
+
+    def step_card(number, title, message, ok, action_html=""):
+        level = status_level(ok)
+        return f"""
+        <article class="step {level}">
+          <div class="step-index">{number}</div>
+          <div>
+            <span>{'OK' if ok else 'CHECK'}</span>
+            <h2>{html.escape(title)}</h2>
+            <p>{html.escape(message)}</p>
+            {action_html}
+          </div>
+        </article>
+        """
+
+    restart_usb_button = '<button data-action="restart-usb" class="secondary">Restart USB</button>'
+    output_buttons = "".join(
+        f'<button data-output="{idx}">OUT{idx}</button>' for idx in range(1, 9)
+    )
+
+    recommended = MODES[0]
+    recommended_availability, recommended_reason = mode_availability(recommended, status, health)
+    recommended_disabled = recommended_availability != "enabled"
+    recommended_selected = active == recommended["id"]
+    if recommended_disabled:
+        recommended_button = '<button disabled>Unavailable</button>'
+    elif recommended_selected:
+        recommended_button = '<button data-mode="usb_7_1_to_8out">Use this mode</button>'
+    else:
+        recommended_button = '<button data-mode="usb_7_1_to_8out">Use this mode</button>'
+    recommended_reason_html = (
+        f'<small>{html.escape(recommended_reason)}</small>' if recommended_reason else ""
+    )
+
+    advanced_cards = []
+    for mode in MODES[1:]:
         availability, reason = mode_availability(mode, status, health)
         if availability == "hidden":
             continue
@@ -208,7 +287,7 @@ def render_page():
             button_html = '<button disabled>Unavailable</button>'
         else:
             button_html = f'<button data-mode="{html.escape(mode["id"])}">Choose mode</button>'
-        mode_cards.append(
+        advanced_cards.append(
             f"""
             <article class="card{selected}{disabled_class}">
               <h3>{html.escape(mode["title"])}</h3>
@@ -218,10 +297,16 @@ def render_page():
             </article>
             """
         )
-
-    output_buttons = "".join(
-        f'<button data-output="{idx}">OUT{idx}</button>' for idx in range(1, 9)
+    advanced_cards.append(
+        """
+        <article class="card">
+          <h3>Advanced CamillaDSP editor</h3>
+          <p>Edit filters, mixers, gains, delays, PEQ, FIR and crossover settings.</p>
+          <a class="button secondary" href="http://raspiaudio.local:5005/gui/index.html">Open editor</a>
+        </article>
+        """
     )
+
     lab_button = ""
     if LAB_MODE_FILE.exists():
         lab_button = '<button data-action="lab-update" class="secondary">Lab update from GitHub</button>'
@@ -258,6 +343,29 @@ def render_page():
         </article>
         """
 
+    blocking_checks = [
+        check
+        for check in checks_by_key.values()
+        if str(check.get("level", "ok")) != "ok"
+    ]
+    if blocking_checks:
+        alert_html = "".join(
+            f"""
+            <article class="alert {html.escape(str(check.get("level", "warning")))}">
+              <strong>{html.escape(str(check.get("label", "")))}</strong>
+              <p>{html.escape(str(check.get("message", "")))}</p>
+            </article>
+            """
+            for check in blocking_checks
+        )
+    else:
+        alert_html = """
+        <article class="alert ok">
+          <strong>Ready</strong>
+          <p>All required checks are passing.</p>
+        </article>
+        """
+
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -274,6 +382,8 @@ def render_page():
       --accent: #008b9a;
       --line: #d7dde3;
       --danger: #a33b2f;
+      --ok: #16713d;
+      --warn: #8a6200;
     }}
     body {{
       margin: 0;
@@ -282,9 +392,17 @@ def render_page():
       color: var(--text);
     }}
     header {{
-      padding: 28px clamp(18px, 4vw, 48px) 18px;
+      padding: 26px clamp(18px, 4vw, 48px) 20px;
       background: #0f2733;
       color: white;
+    }}
+    .header-inner {{
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
     }}
     h1 {{
       margin: 0 0 8px;
@@ -292,31 +410,59 @@ def render_page():
       letter-spacing: 0;
     }}
     header p {{ margin: 0; color: #d6edf1; }}
+    .version {{
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: #e8f7f9;
+      white-space: nowrap;
+      font-weight: 650;
+    }}
     main {{
       max-width: 1120px;
       margin: 0 auto;
       padding: 24px clamp(16px, 4vw, 32px) 40px;
     }}
-    .status {{
+    .wizard {{
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 10px;
-      margin-bottom: 22px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
     }}
-    .metric, .card, .panel {{
+    .step, .card, .panel, .alert {{
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
       box-shadow: 0 1px 2px rgba(0,0,0,.04);
     }}
-    .metric {{ padding: 12px 14px; }}
-    .metric span {{
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 4px;
+    .step {{
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      padding: 16px;
+      min-height: 160px;
     }}
-    .metric strong {{ font-size: 17px; }}
+    .step.ok {{ border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }}
+    .step.warning {{ border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); }}
+    .step-index {{
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #e8f0f2;
+      color: #16323a;
+      font-weight: 800;
+    }}
+    .step span {{
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }}
+    .step h2 {{ margin: 0 0 7px; font-size: 20px; }}
+    .step p {{ margin: 0 0 12px; color: var(--muted); line-height: 1.35; }}
     h2 {{ margin: 24px 0 12px; font-size: 22px; }}
     .actions, .outputs {{
       display: flex;
@@ -327,6 +473,20 @@ def render_page():
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 14px;
+    }}
+    .recommended {{
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 16px;
+    }}
+    .recommended h2 {{ margin: 0 0 8px; }}
+    .recommended p {{ margin: 0; color: var(--muted); line-height: 1.4; }}
+    .recommended small {{
+      display: block;
+      margin-top: 8px;
+      color: #7a4b00;
+      font-weight: 650;
     }}
     .card {{ padding: 18px; }}
     .card h3 {{ margin: 0 0 8px; font-size: 18px; }}
@@ -382,6 +542,25 @@ def render_page():
       padding: 18px;
       margin-top: 18px;
     }}
+    details.panel summary {{
+      cursor: pointer;
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0;
+    }}
+    details.panel[open] summary {{ margin-bottom: 14px; }}
+    .alerts {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }}
+    .alert {{ padding: 12px; }}
+    .alert strong {{ display: block; }}
+    .alert p {{ margin: 6px 0 0; color: var(--muted); }}
+    .alert.ok {{ border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }}
+    .alert.warning {{ border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); }}
+    .alert.error {{ border-color: color-mix(in srgb, var(--danger) 55%, var(--line)); }}
     .checks {{
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -428,56 +607,85 @@ def render_page():
         --line: #2d3a45;
       }}
       .pill.selected {{ background: #123940; color: #d9f7fb; }}
+      .step-index {{ background: #22313a; color: #d9f7fb; }}
+    }}
+    @media (max-width: 760px) {{
+      .header-inner, .recommended {{
+        display: block;
+      }}
+      .version {{
+        display: inline-block;
+        margin-top: 12px;
+      }}
+      .wizard {{
+        grid-template-columns: 1fr;
+      }}
     }}
   </style>
 </head>
 <body>
   <header>
-    <h1>RASPIAUDIO CamillaDSP Box</h1>
-    <p>Flash image, boot, choose mode, test audio.</p>
+    <div class="header-inner">
+      <div>
+        <h1>RASPIAUDIO CamillaDSP Box</h1>
+        <p>Flash image, boot, choose mode, test audio.</p>
+      </div>
+      <div class="version">Version {html.escape(version)}</div>
+    </div>
   </header>
   <main>
-    <section class="status">
-      <div class="metric"><span>Hardware</span><strong>{html.escape(hardware_display)}</strong></div>
-      <div class="metric"><span>Mode</span><strong>{html.escape(str(status.get("active_mode_label", active)))}</strong></div>
-      <div class="metric"><span>CamillaDSP</span><strong>{html.escape(str(camilla))}</strong></div>
-      <div class="metric"><span>TOSLINK card</span><strong>{html.escape(spdif)}</strong></div>
-      <div class="metric"><span>System check</span><strong>{html.escape(str(health_status))}</strong></div>
+    <section class="wizard">
+      {step_card(1, "Hardware detected", hardware_message, hardware_ok)}
+      {step_card(2, "USB audio", usb_message, usb_ok, restart_usb_button)}
+      {step_card(3, "Audio test", audio_message, audio_test_ok, f'<div class="outputs">{output_buttons}</div>')}
     </section>
 
-    <section class="panel">
-      <h2>System Checks</h2>
-      <div class="checks">{health_html}</div>
+    <section class="panel recommended">
+      <div>
+        <h2>Recommended mode</h2>
+        <p><strong>{html.escape(recommended["title"])}</strong></p>
+        <p>{html.escape(recommended["body"])}</p>
+        {recommended_reason_html}
+      </div>
+      <div class="actions">{recommended_button}</div>
     </section>
 
-    <h2>Audio Mode</h2>
-    <section class="modes">{"".join(mode_cards)}</section>
+    <section class="alerts">{alert_html}</section>
 
-    <section class="panel">
-      <h2>Test</h2>
-      <div class="outputs">{output_buttons}</div>
+    <details class="panel">
+      <summary>More modes</summary>
+      <section class="modes">{"".join(advanced_cards)}</section>
       <div class="actions" style="margin-top: 12px">
         <button data-action="test-toslink">Test TOSLINK</button>
         <button data-action="test-inputs" class="secondary">Record 8 inputs test</button>
       </div>
-    </section>
+    </details>
 
     <section class="panel">
       <h2>Support</h2>
       <div class="actions">
-        <button data-action="restart" class="secondary">Restart audio</button>
-        <button data-action="restart-usb" class="secondary">Restart USB gadget</button>
+        <button data-action="fix-audio">Fix audio</button>
+        <button data-action="update-system" class="secondary">Update system</button>
         <button data-action="factory-reset" class="secondary">Factory reset audio</button>
         <button data-action="validate-release" class="secondary">Run release checks</button>
         {lab_button}
         <a class="button secondary" href="/api/diagnostics">Download diagnostics zip</a>
-        <a class="button secondary" href="http://raspiaudio.local:5005/gui/index.html">Advanced CamillaDSP editor</a>
       </div>
       <pre id="log">Ready.</pre>
     </section>
+
+    <details class="panel">
+      <summary>System checks</summary>
+      <div class="checks">{health_html}</div>
+      <p style="color: var(--muted)">Current mode: {html.escape(str(status.get("active_mode_label", active)))}. System check: {html.escape(str(health_status))}.</p>
+    </details>
   </main>
   <script>
     const log = document.getElementById('log');
+    function bind(selector, callback) {{
+      const node = document.querySelector(selector);
+      if (node) node.addEventListener('click', callback);
+    }}
     async function post(path, data) {{
       log.textContent = 'Working...';
       const res = await fetch(path, {{
@@ -492,7 +700,7 @@ def render_page():
         body = json.output || JSON.stringify(json, null, 2);
       }} catch (e) {{}}
       log.textContent = body || 'Done.';
-      if (res.ok && (path.includes('/mode') || path.includes('/factory-reset'))) {{
+      if (res.ok && (path.includes('/mode') || path.includes('/factory-reset') || path.includes('/fix-audio'))) {{
         setTimeout(() => window.location.reload(), 900);
       }}
     }}
@@ -502,12 +710,13 @@ def render_page():
     document.querySelectorAll('[data-output]').forEach(btn => {{
       btn.addEventListener('click', () => post('/api/test-output', {{channel: btn.dataset.output}}));
     }});
-    document.querySelector('[data-action="test-toslink"]').addEventListener('click', () => post('/api/test-toslink', {{}}));
-    document.querySelector('[data-action="test-inputs"]').addEventListener('click', () => post('/api/test-inputs', {{}}));
-    document.querySelector('[data-action="restart"]').addEventListener('click', () => post('/api/restart-audio', {{}}));
-    document.querySelector('[data-action="restart-usb"]').addEventListener('click', () => post('/api/restart-usb-gadget', {{}}));
-    document.querySelector('[data-action="factory-reset"]').addEventListener('click', () => post('/api/factory-reset', {{}}));
-    document.querySelector('[data-action="validate-release"]').addEventListener('click', () => post('/api/validate-release', {{}}));
+    bind('[data-action="test-toslink"]', () => post('/api/test-toslink', {{}}));
+    bind('[data-action="test-inputs"]', () => post('/api/test-inputs', {{}}));
+    bind('[data-action="restart-usb"]', () => post('/api/restart-usb-gadget', {{}}));
+    bind('[data-action="fix-audio"]', () => post('/api/fix-audio', {{}}));
+    bind('[data-action="update-system"]', () => post('/api/update-system', {{}}));
+    bind('[data-action="factory-reset"]', () => post('/api/factory-reset', {{}}));
+    bind('[data-action="validate-release"]', () => post('/api/validate-release', {{}}));
     const labUpdate = document.querySelector('[data-action="lab-update"]');
     if (labUpdate) {{
       labUpdate.addEventListener('click', () => post('/api/lab-update', {{}}));
@@ -585,6 +794,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/restart-usb-gadget":
             result = run_command(["/usr/local/sbin/raspiaudio-restart-usb-gadget"], timeout=30)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/fix-audio":
+            result = run_command(["/usr/local/sbin/raspiaudio-fix-audio"], timeout=120)
+            self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
+            return
+        if parsed.path == "/api/update-system":
+            result = run_command(["/usr/local/sbin/raspiaudio-update-system"], timeout=60)
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/factory-reset":

@@ -59,11 +59,14 @@ install_fast() {
   install -m 0755 appliance/bin/raspiaudio-mode /usr/local/sbin/raspiaudio-mode
   install -m 0755 appliance/bin/raspiaudio-health /usr/local/sbin/raspiaudio-health
   install -m 0755 appliance/bin/raspiaudio-diagnostics /usr/local/sbin/raspiaudio-diagnostics
+  install -m 0755 appliance/bin/raspiaudio-fix-audio /usr/local/sbin/raspiaudio-fix-audio
   install -m 0755 appliance/bin/raspiaudio-restart-usb-gadget /usr/local/sbin/raspiaudio-restart-usb-gadget
   install -m 0755 appliance/bin/raspiaudio-test-audio /usr/local/sbin/raspiaudio-test-audio
+  install -m 0755 appliance/bin/raspiaudio-update-system /usr/local/sbin/raspiaudio-update-system
   install -m 0755 appliance/bin/raspiaudio-validate-release /usr/local/sbin/raspiaudio-validate-release
   install -m 0755 appliance/bin/raspiaudio-dev-update /usr/local/sbin/raspiaudio-dev-update
   install -m 0755 appliance/web/raspiaudio_web.py /opt/raspiaudio-web/raspiaudio_web.py
+  install -m 0644 appliance/VERSION /etc/raspiaudio/version
 
   install -d -o raspiaudio -g audio -m 0775 /etc/camilladsp /etc/camilladsp/coeffs
   install -m 0644 -o raspiaudio -g audio configs/*.yml /etc/camilladsp/

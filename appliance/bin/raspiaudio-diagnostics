@@ -59,6 +59,8 @@ fi
 copy_if_exists /boot/firmware/config.txt boot-firmware-config.txt
 copy_if_exists /boot/config.txt boot-config.txt
 copy_if_exists /etc/raspiaudio/box.conf box.conf
+copy_if_exists /etc/raspiaudio/version version.txt
+copy_if_exists /etc/raspiaudio/update-url update-url.txt
 copy_if_exists /etc/modprobe.d/usb_g_audio.conf usb_g_audio.conf
 copy_if_exists /etc/modprobe.d/raspiaudio-card.conf raspiaudio-card.conf
 copy_if_exists /etc/modules-load.d/raspiaudio-usb-audio.conf raspiaudio-usb-audio.conf

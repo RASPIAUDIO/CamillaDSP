@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION_FILE="/etc/raspiaudio/version"
+UPDATE_URL_FILE="/etc/raspiaudio/update-url"
+
+current_version() {
+  if [ -f "$VERSION_FILE" ]; then
+    cat "$VERSION_FILE"
+  else
+    echo "unknown"
+  fi
+}
+
+cat <<EOF
+RASPIAUDIO CamillaDSP Box
+Current version: $(current_version)
+
+No public update channel is configured on this image yet.
+
+For beta images, download the latest .img.xz release and flash it again with
+Raspberry Pi Imager. Development images may expose the separate Lab update
+button when /etc/raspiaudio/lab-mode is intentionally enabled.
+EOF
+
+if [ -f "$UPDATE_URL_FILE" ]; then
+  echo
+  echo "Configured update URL:"
+  cat "$UPDATE_URL_FILE"
+fi

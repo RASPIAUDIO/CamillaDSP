@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(id -u)" -ne 0 ]; then
+  exec sudo -E bash "$0" "$@"
+fi
+
+run_step() {
+  local title="$1"
+  shift
+  echo
+  echo "== $title =="
+  "$@" 2>&1 || {
+    echo "Warning: $title did not complete cleanly."
+    return 0
+  }
+}
+
+run_step "Restart USB audio link" /usr/local/sbin/raspiaudio-restart-usb-gadget
+run_step "Restart optical output" systemctl restart raspiaudio-spdif.service
+run_step "Restart audio engine" systemctl restart camilladsp.service
+
+echo
+echo "== Current status =="
+if command -v raspiaudio-health >/dev/null 2>&1; then
+  raspiaudio-health || true
+else
+  systemctl --no-pager --plain status camilladsp.service raspiaudio-spdif.service 2>&1 || true
+fi
