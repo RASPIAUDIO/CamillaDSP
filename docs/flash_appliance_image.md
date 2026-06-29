@@ -71,8 +71,9 @@ http://192.168.1.155
    ```
 
 3. Set the computer output format to `7.1`, `8 channels`, `48 kHz`.
-4. Use the dashboard output test buttons to test OUT1 to OUT8.
-5. Keep amplifier volume low for the first test.
+4. Click `Test all outputs` in the dashboard.
+5. If one output needs checking, use `Test OUT1` to `Test OUT8`.
+6. Keep amplifier volume low for the first test.
 
 ## Other Modes
 

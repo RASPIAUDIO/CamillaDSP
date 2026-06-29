@@ -9,6 +9,7 @@
   "changelog": [
     "Beginner dashboard with hardware, USB audio, and audio test steps.",
     "Default USB 7.1 48 kHz to 8 analog outputs mode.",
+    "One-click Test all outputs button for OUT1 to OUT8.",
     "TOSLINK optical stereo mode on Raspberry Pi 5 GPIO12.",
     "Active crossover preset with safe gain, PEQ, and delay placeholders.",
     "8xOUT and 8xIN+8xOUT auto-detection.",
