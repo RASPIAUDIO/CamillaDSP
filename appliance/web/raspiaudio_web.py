@@ -75,6 +75,33 @@ def run_command(args, timeout=20):
         return {"ok": False, "returncode": -1, "output": str(exc)}
 
 
+def start_lab_update():
+    log_path = "/var/log/raspiaudio-lab-update.log"
+    try:
+        subprocess.Popen(
+            [
+                "/bin/bash",
+                "-lc",
+                f"sleep 1; /usr/local/sbin/raspiaudio-dev-update fast >{log_path} 2>&1",
+            ],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        return {
+            "ok": True,
+            "returncode": 0,
+            "output": (
+                "Lab update started from GitHub. "
+                "Refresh this page after 30 seconds. "
+                f"Log: {log_path}"
+            ),
+        }
+    except Exception as exc:
+        return {"ok": False, "returncode": -1, "output": str(exc)}
+
+
 def load_status():
     result = run_command(["/usr/local/sbin/raspiaudio-mode", "status-json"], timeout=5)
     if not result["ok"]:
@@ -521,16 +548,16 @@ class Handler(BaseHTTPRequestHandler):
                     },
                 )
                 return
-            result = run_command(["/usr/local/sbin/raspiaudio-dev-update", "fast"], timeout=120)
+            result = start_lab_update()
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/test-output":
             channel = str(body.get("channel", ""))
-            result = run_command(["/usr/local/sbin/raspiaudio-test-audio", "output", channel], timeout=20)
+            result = run_command(["/usr/local/sbin/raspiaudio-test-audio", "output", channel], timeout=30)
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/test-toslink":
-            result = run_command(["/usr/local/sbin/raspiaudio-test-audio", "toslink"], timeout=20)
+            result = run_command(["/usr/local/sbin/raspiaudio-test-audio", "toslink"], timeout=120)
             self.send_json(HTTPStatus.OK if result["ok"] else HTTPStatus.BAD_REQUEST, result)
             return
         if parsed.path == "/api/test-inputs":
