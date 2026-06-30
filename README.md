@@ -6,9 +6,8 @@ active speakers, DSP crossovers, EQ, gain, delay, and phase/time alignment.
 ## Quick Start
 
 The recommended beginner path is the flashable RASPIAUDIO appliance image.
-Normal users should start from the public product page:
-
-[https://raspiaudio.com/camilladsp-box](https://raspiaudio.com/camilladsp-box)
+The public product/download page is not live yet, so this GitHub README is the
+current entry point for early testers.
 
 ```text
 Flash image -> boot -> open http://raspiaudio.local -> choose mode -> test audio
@@ -19,16 +18,24 @@ packages by hand. It includes CamillaDSP, CamillaGUI, the USB 7.1 audio gadget,
 RASPIAUDIO 8-output profiles, active crossover presets, TOSLINK output support,
 and the simple dashboard.
 
-1. Download the RASPIAUDIO CamillaDSP Box image.
+1. Get the RASPIAUDIO CamillaDSP Box `.img.xz` image file.
 2. Flash the image to a microSD card with Raspberry Pi Imager.
 3. Mount the RASPIAUDIO 8xOUT or 8xIN+8xOUT board on a Raspberry Pi 5.
 4. Boot the Pi and open `http://raspiaudio.local`.
 5. Choose a mode and click the audio test buttons.
 
+Dashboard screenshots:
+
+![RASPIAUDIO dashboard showing hardware and USB status](docs/assets/raspiaudio-dashboard-home.png)
+
+![RASPIAUDIO dashboard mode selector](docs/assets/raspiaudio-dashboard-change-mode.png)
+
+![RASPIAUDIO dashboard audio output test in Settings](docs/assets/raspiaudio-dashboard-settings-audio-test.png)
+
 Beginner flashing guide:
 [docs/flash_appliance_image.md](docs/flash_appliance_image.md)
 
-Public page source:
+Draft public page source, for later website publishing:
 [public/camilladsp-box](public/camilladsp-box)
 
 Detailed appliance/release notes:

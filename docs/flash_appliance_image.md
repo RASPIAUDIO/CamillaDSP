@@ -2,17 +2,23 @@
 
 This is the simplest setup path for non-Linux users.
 
-Public download page:
-
-```text
-https://raspiaudio.com/camilladsp-box
-```
+The public download page is not live yet. For now, use this guide with the
+RASPIAUDIO CamillaDSP Box `.img.xz` image file shared from the repo/release
+bundle.
 
 You flash one ready-made image, boot the Raspberry Pi, then use the web page:
 
 ```text
 http://raspiaudio.local
 ```
+
+## Dashboard Preview
+
+![RASPIAUDIO dashboard showing hardware and USB status](assets/raspiaudio-dashboard-home.png)
+
+![RASPIAUDIO dashboard mode selector](assets/raspiaudio-dashboard-change-mode.png)
+
+![RASPIAUDIO dashboard audio output test in Settings](assets/raspiaudio-dashboard-settings-audio-test.png)
 
 ## What You Need
 

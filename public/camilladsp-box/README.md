@@ -1,6 +1,10 @@
-# RASPIAUDIO CamillaDSP Box Public Page
+# RASPIAUDIO CamillaDSP Box Public Page Draft
 
-Publish this directory as:
+This public product/download page is not live yet. Until it is published, the
+GitHub README and `docs/flash_appliance_image.md` are the user-facing entry
+points.
+
+When ready, publish this directory as:
 
 ```text
 https://raspiaudio.com/camilladsp-box/
