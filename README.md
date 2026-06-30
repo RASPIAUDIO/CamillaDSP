@@ -26,7 +26,6 @@ and the simple dashboard.
 
 Dashboard screenshots:
 
-
 ![RASPIAUDIO dashboard mode selector](docs/assets/raspiaudio-dashboard-change-mode.png)
 
 Beginner flashing guide:
