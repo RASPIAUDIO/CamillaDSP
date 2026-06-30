@@ -330,7 +330,7 @@ def render_page():
     restart_usb_button = '<button data-action="restart-usb" class="secondary">Restart USB</button>'
     test_all_outputs_button = '<button data-action="test-all-outputs" class="secondary">Test all outputs</button>'
     output_buttons = "".join(
-        f'<button data-output="{idx}">Test OUT{idx}</button>' for idx in range(1, 9)
+        f'<button data-output="{idx}" class="output-test">Test OUT{idx}</button>' for idx in range(1, 9)
     )
 
     recommended = MODES[0]
@@ -338,19 +338,21 @@ def render_page():
     recommended_disabled = recommended_availability != "enabled"
     recommended_selected = active == recommended["id"]
     if recommended_disabled:
-        recommended_button = '<button disabled>Unavailable</button>'
+        recommended_button = '<button disabled class="primary-action">Unavailable</button>'
     elif recommended_selected:
-        recommended_button = '<button data-mode="usb_7_1_to_8out">Use this mode</button>'
+        recommended_button = '<button data-mode="usb_7_1_to_8out" class="primary-action">Use this mode</button>'
     else:
-        recommended_button = '<button data-mode="usb_7_1_to_8out">Use this mode</button>'
+        recommended_button = '<button data-mode="usb_7_1_to_8out" class="primary-action">Use this mode</button>'
     recommended_reason_html = (
         f'<small>{html.escape(recommended_reason)}</small>' if recommended_reason else ""
     )
     audio_test_actions = f"""
       <p class="recommended-inline"><strong>{html.escape(recommended["title"])}</strong><br>{html.escape(recommended["body"])}</p>
-      <div class="actions">{recommended_button}{test_all_outputs_button}</div>
+      <div class="audio-actions">
+        <div class="mode-actions">{recommended_button}{test_all_outputs_button}</div>
+        <div class="outputs">{output_buttons}</div>
+      </div>
       {recommended_reason_html}
-      <div class="outputs">{output_buttons}</div>
     """
 
     advanced_cards = []
@@ -539,6 +541,9 @@ def render_page():
       padding: 16px;
       min-height: 160px;
     }}
+    .step > div:last-child {{
+      min-width: 0;
+    }}
     .step.ok {{ border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }}
     .step.warning {{ border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); }}
     .step-index {{
@@ -568,9 +573,25 @@ def render_page():
       color: var(--text);
     }}
     h2 {{ margin: 24px 0 12px; font-size: 22px; }}
-    .actions, .outputs {{
+    .actions {{
       display: flex;
       flex-wrap: wrap;
+      gap: 10px;
+    }}
+    .audio-actions {{
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }}
+    .mode-actions {{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }}
+    .outputs {{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(92px, 1fr));
       gap: 10px;
     }}
     .modes {{
@@ -598,25 +619,56 @@ def render_page():
       border: 1px solid var(--accent);
       background: var(--accent);
       color: white;
-      border-radius: 6px;
-      padding: 9px 12px;
-      font-weight: 650;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-weight: 750;
       cursor: pointer;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       min-height: 38px;
+      line-height: 1.1;
+      text-align: center;
+      box-shadow: 0 1px 0 rgba(0, 0, 0, .05);
+      transition: background .12s ease, border-color .12s ease, transform .12s ease, box-shadow .12s ease;
+    }}
+    button:hover:not(:disabled), .button:hover {{
+      background: #047b88;
+      border-color: #047b88;
+      box-shadow: 0 2px 8px rgba(0, 97, 112, .16);
+    }}
+    button:active:not(:disabled) {{
+      transform: translateY(1px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
+    }}
+    button:focus-visible, .button:focus-visible {{
+      outline: 3px solid rgba(0,139,154,.24);
+      outline-offset: 2px;
     }}
     button:disabled {{
       cursor: not-allowed;
       border-color: var(--line);
       background: #a8b2bc;
       color: #edf2f6;
+      box-shadow: none;
     }}
     button.secondary, .button.secondary {{
-      background: transparent;
+      background: #f7fcfd;
       color: var(--accent);
+      box-shadow: none;
+    }}
+    button.secondary:hover:not(:disabled), .button.secondary:hover {{
+      background: #e7f6f8;
+      color: #056d78;
+      border-color: #056d78;
+    }}
+    .primary-action, .output-test {{
+      width: 100%;
+    }}
+    .output-test {{
+      min-width: 0;
+      padding-inline: 8px;
     }}
     .pill {{
       background: var(--panel);
@@ -711,6 +763,14 @@ def render_page():
       }}
       .pill.selected {{ background: #123940; color: #d9f7fb; }}
       .step-index {{ background: #22313a; color: #d9f7fb; }}
+      button.secondary, .button.secondary {{
+        background: #162f37;
+        color: #7ed8e1;
+      }}
+      button.secondary:hover:not(:disabled), .button.secondary:hover {{
+        background: #1b424c;
+        color: #a6f0f6;
+      }}
     }}
     @media (max-width: 760px) {{
       .header-inner {{
@@ -721,6 +781,11 @@ def render_page():
         margin-top: 12px;
       }}
       .wizard {{
+        grid-template-columns: 1fr;
+      }}
+    }}
+    @media (max-width: 420px) {{
+      .mode-actions, .outputs {{
         grid-template-columns: 1fr;
       }}
     }}
