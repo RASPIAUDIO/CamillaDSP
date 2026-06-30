@@ -273,7 +273,7 @@ def mode_availability(mode, status, health):
     hardware = str(status.get("hardware", "unknown"))
     supported_hardware = mode.get("hardware")
     if supported_hardware and hardware not in supported_hardware:
-        return "hidden", f"Requires {', '.join(supported_hardware)}"
+        return "disabled", f"Requires {', '.join(supported_hardware)}"
 
     checks = check_ok_map(health)
     missing = []
@@ -333,33 +333,17 @@ def render_page():
         f'<button data-output="{idx}" class="output-test">Test OUT{idx}</button>' for idx in range(1, 9)
     )
 
-    recommended = MODES[0]
-    recommended_availability, recommended_reason = mode_availability(recommended, status, health)
-    recommended_disabled = recommended_availability != "enabled"
-    recommended_selected = active == recommended["id"]
-    if recommended_disabled:
-        recommended_button = '<button disabled class="primary-action">Unavailable</button>'
-    elif recommended_selected:
-        recommended_button = '<button data-mode="usb_7_1_to_8out" class="primary-action">Use this mode</button>'
-    else:
-        recommended_button = '<button data-mode="usb_7_1_to_8out" class="primary-action">Use this mode</button>'
-    recommended_reason_html = (
-        f'<small>{html.escape(recommended_reason)}</small>' if recommended_reason else ""
-    )
-    audio_test_actions = f"""
-      <p class="recommended-inline"><strong>{html.escape(recommended["title"])}</strong><br>{html.escape(recommended["body"])}</p>
+    audio_test_panel = f"""
+      <p>{html.escape(audio_message)}</p>
       <div class="audio-actions">
-        <div class="mode-actions">{recommended_button}{test_all_outputs_button}</div>
+        <div class="mode-actions">{test_all_outputs_button}</div>
         <div class="outputs">{output_buttons}</div>
       </div>
-      {recommended_reason_html}
     """
 
-    advanced_cards = []
-    for mode in MODES[1:]:
+    mode_cards = []
+    for mode in MODES:
         availability, reason = mode_availability(mode, status, health)
-        if availability == "hidden":
-            continue
         selected = " selected" if mode["id"] == active else ""
         disabled = availability == "disabled"
         disabled_class = " disabled" if disabled else ""
@@ -370,9 +354,11 @@ def render_page():
         )
         if disabled:
             button_html = '<button disabled>Unavailable</button>'
+        elif selected:
+            button_html = '<button disabled>Current mode</button>'
         else:
-            button_html = f'<button data-mode="{html.escape(mode["id"])}">Choose mode</button>'
-        advanced_cards.append(
+            button_html = f'<button data-mode="{html.escape(mode["id"])}">Use this mode</button>'
+        mode_cards.append(
             f"""
             <article class="card{selected}{disabled_class}">
               <h3>{html.escape(mode["title"])}</h3>
@@ -382,15 +368,6 @@ def render_page():
             </article>
             """
         )
-    advanced_cards.append(
-        """
-        <article class="card">
-          <h3>Advanced CamillaDSP editor</h3>
-          <p>Edit filters, mixers, gains, delays, PEQ, FIR and crossover settings.</p>
-          <a class="button secondary" href="http://raspiaudio.local:5005/gui/index.html">Open editor</a>
-        </article>
-        """
-    )
 
     checks = health.get("checks", [])
     if checks:
@@ -524,7 +501,7 @@ def render_page():
     }}
     .wizard {{
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 14px;
       margin-bottom: 18px;
     }}
@@ -585,7 +562,7 @@ def render_page():
     }}
     .mode-actions {{
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 10px;
       align-items: stretch;
     }}
@@ -612,6 +589,24 @@ def render_page():
     .card.disabled {{
       opacity: .55;
       background: color-mix(in srgb, var(--panel) 78%, var(--line));
+    }}
+    .mode-editor {{
+      margin-top: 14px;
+    }}
+    .editor-button {{
+      width: 100%;
+      min-height: 52px;
+      font-size: 17px;
+    }}
+    .settings-section {{
+      padding-top: 14px;
+      margin-top: 14px;
+      border-top: 1px solid var(--line);
+    }}
+    .settings-section:first-of-type {{
+      padding-top: 0;
+      margin-top: 0;
+      border-top: 0;
     }}
     .selected {{ outline: 3px solid rgba(0,139,154,.22); border-color: var(--accent); }}
     button, .button {{
@@ -805,30 +800,38 @@ def render_page():
     <section class="wizard">
       {step_card(1, "Hardware detected", hardware_message, hardware_ok)}
       {step_card(2, "USB audio", usb_message, usb_ok, restart_usb_button)}
-      {step_card(3, "Audio test", audio_message, audio_test_ok, audio_test_actions)}
     </section>
 
     {alerts_section}
 
     <details class="panel">
-      <summary>More modes</summary>
-      <section class="modes">{"".join(advanced_cards)}</section>
-    </details>
-
-    <details class="panel">
-      <summary>Fix audio or update system</summary>
-      <div class="actions">
-        {visible_support_actions}
+      <summary>Change mode</summary>
+      <section class="modes">{"".join(mode_cards)}</section>
+      <div class="mode-editor">
+        <a class="button editor-button" href="http://raspiaudio.local:5005/gui/index.html">Open CamillaDSP editor</a>
       </div>
-      {changelog_html}
-      {advanced_support}
-      <pre id="log">Ready.</pre>
     </details>
 
-    <details class="panel">
-      <summary>System checks</summary>
-      <div class="checks">{health_html}</div>
-      <p style="color: var(--muted)">Current mode: {html.escape(str(status.get("active_mode_label", active)))}. System check: {html.escape(str(health_status))}.</p>
+    <details class="panel settings-panel">
+      <summary>Settings</summary>
+      <section class="settings-section">
+        <h3>Audio test</h3>
+        {audio_test_panel}
+      </section>
+      <section class="settings-section">
+        <h3>Fix audio or update system</h3>
+        <div class="actions">
+          {visible_support_actions}
+        </div>
+        {changelog_html}
+        {advanced_support}
+      </section>
+      <section class="settings-section">
+        <h3>System checks</h3>
+        <div class="checks">{health_html}</div>
+        <p style="color: var(--muted)">Current mode: {html.escape(str(status.get("active_mode_label", active)))}. System check: {html.escape(str(health_status))}.</p>
+      </section>
+      <pre id="log">Ready.</pre>
     </details>
   </main>
   <script>
