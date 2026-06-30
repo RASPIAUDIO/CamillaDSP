@@ -26,11 +26,8 @@ and the simple dashboard.
 
 Dashboard screenshots:
 
-![RASPIAUDIO dashboard showing hardware and USB status](docs/assets/raspiaudio-dashboard-home.png)
 
 ![RASPIAUDIO dashboard mode selector](docs/assets/raspiaudio-dashboard-change-mode.png)
-
-![RASPIAUDIO dashboard audio output test in Settings](docs/assets/raspiaudio-dashboard-settings-audio-test.png)
 
 Beginner flashing guide:
 [docs/flash_appliance_image.md](docs/flash_appliance_image.md)
