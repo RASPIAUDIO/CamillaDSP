@@ -200,7 +200,9 @@ better fit than CPU-driven GPIO toggling.
 CamillaDSP -> RASPISPDIF ALSA card -> S/PDIF encoder -> DMA -> RP1 PIO -> GPIO12 -> LED/TOSLINK
 ```
 
-![Minimal Raspberry Pi 5 S/PDIF optical output using GPIO12 and an LED](docs/assets/pi5-spdif-minimal-led-toslink.png)
+[![Check the demo on YouTube](docs/assets/check-the-demo-on-youtube.png)](https://youtube.com/shorts/2ND7hcqHV5Q)
+
+[Check the demo on YouTube](https://youtube.com/shorts/2ND7hcqHV5Q)
 
 Read the validated USB-to-TOSLINK guide:
 [docs/usb_gadget_2ch_to_spdif_optical.md](docs/usb_gadget_2ch_to_spdif_optical.md)
