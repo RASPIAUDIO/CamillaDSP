@@ -15,6 +15,10 @@ Windows / macOS / Linux USB audio
 It is separate from the RASPIAUDIO 8xOUT profiles. It uses the experimental
 Raspberry Pi 5 S/PDIF ALSA driver from `prototypes/pi5_spdif_gpio`.
 
+Full explanation of the Raspberry Pi 5 RP1 PIO + DMA S/PDIF output, including
+GPIO12 wiring, installation, limits, and validation notes:
+[prototypes/pi5_spdif_gpio/README.md](../prototypes/pi5_spdif_gpio/README.md)
+
 ## Profiles
 
 For the current RASPIAUDIO 7.1 USB gadget, use the front-left/front-right

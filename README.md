@@ -207,6 +207,10 @@ CamillaDSP -> RASPISPDIF ALSA card -> S/PDIF encoder -> DMA -> RP1 PIO -> GPIO12
 Read the validated USB-to-TOSLINK guide:
 [docs/usb_gadget_2ch_to_spdif_optical.md](docs/usb_gadget_2ch_to_spdif_optical.md)
 
+For the full explanation of the Raspberry Pi 5 RP1 PIO + DMA S/PDIF output,
+including install, GPIO12 wiring, limits, and validation notes, read:
+[prototypes/pi5_spdif_gpio/README.md](prototypes/pi5_spdif_gpio/README.md)
+
 ## Active crossover preset
 
 For an open miniDSP-style box, start from:
