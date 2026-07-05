@@ -60,6 +60,8 @@ flowchart LR
 - [Raspberry Pi 5 S/PDIF audio from a GPIO LED](https://youtube.com/shorts/jtMrTWnFblk):
   GPIO12 drives a simple LED close to a TOSLINK receiver. The signal is generated
   by the Pi 5 RP1 PIO + DMA prototype and exposed to Linux as an ALSA sound card.
+  Technical explanation:
+  [why Raspberry Pi 5 RP1 PIO matters](prototypes/pi5_spdif_gpio/README.md#why-raspberry-pi-5-rp1-pio-matters).
 - [PC USB audio into Raspberry Pi 5 CamillaDSP, then 8 outputs](https://youtube.com/shorts/2ND7hcqHV5Q):
   a USB-C power/data splitter lets the Pi stay powered while the PC sees it as a
   USB 7.1 sound card. Audio enters CamillaDSP, then goes to 8 analog outputs or

@@ -30,6 +30,55 @@ https://raspiaudio.com/
 #RaspberryPi #CamillaDSP #SPDIF #TOSLINK #LinuxAudio #DIYAudio
 ```
 
+## Instagram Reel For Video 1
+
+Text on screen:
+
+```text
+Raspberry Pi 5
+S/PDIF optical audio
+from a simple GPIO LED
+```
+
+Caption:
+
+```text
+Yes, this is audio over light from a Raspberry Pi 5 GPIO.
+
+The Raspberry Pi 5 has an RP1 I/O chip with PIO. We use it as a tiny hardware bitstream engine: Linux audio goes to an ALSA driver, the driver encodes S/PDIF, DMA feeds the RP1 PIO, and GPIO12 outputs the optical signal fast enough for a TOSLINK receiver.
+
+So this is not just blinking an LED. It is a real S/PDIF audio stream generated from a Raspberry Pi 5 GPIO, and Linux sees it as a normal sound card.
+
+That means CamillaDSP can route audio to it for filters, crossovers, experiments and optical output.
+
+Project:
+https://github.com/RASPIAUDIO/CamillaDSP
+
+#raspberrypi #raspberrypi5 #camilladsp #spdif #toslink #linuxaudio #diyaudio #audioproject #opensourcehardware #raspiaudio
+```
+
+Short caption:
+
+```text
+Raspberry Pi 5 optical S/PDIF from a GPIO LED.
+
+The Pi 5 RP1 PIO works as a small hardware bitstream engine: ALSA audio -> S/PDIF encoder -> DMA -> RP1 PIO -> GPIO12 -> TOSLINK receiver.
+
+So the LED is carrying a real optical audio stream, not just blinking.
+
+Project: github.com/RASPIAUDIO/CamillaDSP
+
+#raspberrypi #camilladsp #spdif #toslink #diyaudio #linuxaudio
+```
+
+Technical note:
+
+```text
+On Raspberry Pi 5, GPIO timing goes through the RP1 I/O chip. RP1 has PIO blocks, which are small programmable hardware engines. For this S/PDIF output, the Linux driver encodes normal PCM audio into S/PDIF, DMA keeps the data flowing, and the RP1 PIO state machine outputs the 6.144 MHz 48 kHz stereo S/PDIF half-bit stream on GPIO12.
+
+That is why it can appear as a normal ALSA sound card while still producing timing-accurate optical audio.
+```
+
 ## YouTube Short 2
 
 Video:

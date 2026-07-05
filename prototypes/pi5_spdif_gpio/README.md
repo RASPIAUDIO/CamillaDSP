@@ -38,6 +38,50 @@ V1 is intentionally simple:
 - Do not use GPIO18-GPIO27 on RASPIAUDIO 8xOUT / 8xIN+8xOUT setups. Those pins
   are used by the Pi 5 I2S overlay.
 
+## Why Raspberry Pi 5 RP1 PIO matters
+
+On Raspberry Pi 5, the external GPIO pins are handled by the RP1 I/O chip. RP1
+includes PIO blocks: small programmable hardware engines that can output a
+precise bitstream without asking the Linux CPU to toggle a GPIO in real time.
+
+That is the key point of this prototype. The LED is not just blinking. It is
+receiving a real S/PDIF optical bitstream:
+
+```text
+PCM audio
+    -> ALSA RASPISPDIF playback device
+    -> kernel S/PDIF encoder
+    -> DMA queue
+    -> RP1 PIO state machine
+    -> GPIO12
+    -> LED / TOSLINK receiver
+```
+
+The kernel driver converts normal PCM audio into S/PDIF subframes, adds the
+preambles, channel status and parity bits, then BMC-encodes the stream. DMA
+feeds the packed bits to RP1 PIO continuously. The PIO state machine outputs
+one bit per clock tick on GPIO12.
+
+At 48 kHz stereo, S/PDIF needs a 6.144 MHz half-bit stream. That is far too
+timing-sensitive for a normal Linux userspace GPIO loop, but it is a good fit
+for RP1 PIO + DMA.
+
+This is why Linux can see the output as a normal sound card while the actual
+timing-critical work happens in hardware:
+
+```text
+CamillaDSP / aplay / any ALSA client
+    -> hw:CARD=RASPISPDIF,DEV=0
+    -> RP1 PIO S/PDIF output
+```
+
+Older Raspberry Pi S/PDIF projects such as `raspdif` proved that software
+S/PDIF was possible on Raspberry Pi 1-4, but they relied on the older BCM283x
+PCM/I2S peripheral and DMA model. Raspberry Pi 5 moved external I/O to RP1, so
+the old register addresses, GPIO muxing and DMA assumptions do not apply. The
+Pi 5-specific path in this repo is therefore RP1 PIO plus DMA, wrapped as an
+ALSA playback driver.
+
 ## How it works
 
 The kernel driver receives normal stereo PCM from ALSA. For each 20 ms audio
