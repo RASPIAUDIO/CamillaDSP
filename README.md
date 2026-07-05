@@ -24,6 +24,9 @@ and the simple dashboard.
 4. Boot the Pi and open `http://raspiaudio.local`.
 5. Choose a mode and click the audio test buttons.
 
+Watch the USB gadget + CamillaDSP + 8-output demo:
+[PC USB audio into Raspberry Pi 5 CamillaDSP, then 8 outputs](https://youtube.com/shorts/2ND7hcqHV5Q).
+
 Dashboard screenshots:
 
 ![RASPIAUDIO dashboard mode selector](docs/assets/raspiaudio-dashboard-change-mode.png)
