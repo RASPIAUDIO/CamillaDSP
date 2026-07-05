@@ -186,6 +186,17 @@ clean audio. For a cleaner mechanical product, use a ready-made TOSLINK
 transmitter socket/module with the LED already included; the optical principle
 is the same, but cable alignment and mounting are much better.
 
+The Raspberry Pi 5-specific part is the RP1 PIO block. The LED is not just
+blinking from Linux userspace: CamillaDSP sends audio to a normal ALSA playback
+device, the `RASPISPDIF` driver encodes it as S/PDIF, DMA feeds the RP1 PIO
+state machine, and GPIO12 outputs the 48 kHz stereo S/PDIF bitstream. At 48 kHz
+stereo this needs a 6.144 MHz half-bit stream, which is why RP1 PIO + DMA is a
+better fit than CPU-driven GPIO toggling.
+
+```text
+CamillaDSP -> RASPISPDIF ALSA card -> S/PDIF encoder -> DMA -> RP1 PIO -> GPIO12 -> LED/TOSLINK
+```
+
 ![Minimal Raspberry Pi 5 S/PDIF optical output using GPIO12 and an LED](docs/assets/pi5-spdif-minimal-led-toslink.png)
 
 Read the validated USB-to-TOSLINK guide:
